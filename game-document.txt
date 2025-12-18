@@ -1,0 +1,154 @@
+# Game Design Document: SkyDrop Logistics
+
+## 1. Executive Summary
+*   **Title:** SkyDrop Logistics
+*   **Genre:** Simulation / Management / Puzzle / Idle
+*   **Platform:** Mobile (Portrait Mode Only)
+*   **Target Audience:** Casual gamers who enjoy optimization puzzles and resource management.
+*   **Core Concept:** Manage a fleet of delivery drones by balancing weight, battery range, and cargo value. Players must physically assemble the drone configuration (Battery + Cargo) for every flight.
+
+---
+
+## 2. Screen Layout (Vertical Stack)
+The game utilizes a portrait orientation divided into five distinct interactive zones, stacked from top to bottom.
+
+### Zone 1: The HUD (Top 10%)
+*   **Bank Balance:** Large text displaying current funds (e.g., `$1,250`).
+*   **Fleet Status:** Icon showing `X/5` Drones active.
+    *   *Interaction:* Tapping opens a "Live Map" overlay showing active deliveries and return timers.
+
+### Zone 2: The Conveyor Belt (Upper 20%)
+*   **Visual:** A 3D conveyor belt moving continuously from **Right to Left**.
+*   **The Stream:** Packages spawn on the right and drift left. If they reach the left edge, they fall into a recycling bin and are lost (Missed Opportunity).
+*   **Package UI:** Floating cards above each box display:
+    *   **Distance:** (e.g., `3.2 km`) - Color-coded (Green=Close, Red=Far).
+    *   **Weight:** (e.g., `1.5 kg`) - Icon of a weight.
+    *   **Reward:** (e.g., `$45`).
+    *   **Type:** Standard (Brown box) or VIP (Gold crate, high reward).
+*   **Interaction:**
+    *   **Drag Down:** Moves package to the Drone (Load).
+    *   **Swipe Up:** Flings the package off-screen (Manual Reject/Trash) to clear space for new spawns.
+
+### Zone 3: The Battery Rack (Middle 15%)
+*   **Visual:** A horizontal shelf located above the drone hangar.
+*   **Layout:** A scrollable strip holding up to 10 batteries.
+*   **Battery UI:**
+    *   **Charge Level:** Vertical green bar on the battery face. Fills slowly when on the rack.
+    *   **Capacity/Weight:** Visual size indicates class (Small/Light vs. Large/Heavy).
+*   **Interaction:**
+    *   **Drag Down:** Load battery into Drone.
+    *   **Drag Up:** Return battery to Rack to charge.
+
+### Zone 4: The Hangar (Lower 35%)
+*   **Visual:** The active drone sits on a central landing pad.
+*   **Navigation:** **Swipe Left/Right** in this zone to cycle through owned drones (Max 5).
+*   **Drone Stats Dashboard:**
+    *   **Speed:** (e.g., `40 km/h`).
+    *   **Carry Capacity:** `Current Payload / Max Lift`.
+        *   *Formula:* `Max Lift - Frame Weight - Battery Weight = Available Cargo Space`.
+    *   **Range:** `Current Range / Max Range`.
+        *   *Formula:* Based on Battery Charge & Drone Efficiency.
+*   **Slots:** Two distinct drop zones on the drone:
+    *   **Rear Slot:** For Battery.
+    *   **Underbelly:** For Package.
+
+### Zone 5: Control Deck (Bottom 20%)
+*   **Main Button:** **"DELIVER"** (Center).
+    *   *State:* **Disabled (Grey)** if overweight, insufficient range, or missing components.
+    *   *State:* **Enabled (Green)** if flight check passes.
+*   **Secondary Buttons:**
+    *   **Left:** **Shop** (Buy Drones/Batteries).
+    *   **Right:** **Upgrade** (Improve Hardware).
+
+---
+
+## 3. Core Gameplay Mechanics
+
+### 3.1. The Physics Puzzle
+The core loop requires the player to solve a weight vs. distance equation for every delivery.
+1.  **Weight Constraint:** `Frame + Battery + Package` must be $\le$ `Engine Max Lift`.
+    *   *Strategy:* Heavy packages require **Light Batteries** (sacrificing range) or **Stronger Engines** (upgrades).
+2.  **Range Constraint:** `Battery Charge` must be $\ge$ `Package Distance`.
+    *   *Strategy:* Long-distance packages require **Heavy Batteries** (sacrificing cargo weight).
+
+### 3.2. The Conveyor Belt & FOMO
+*   **Dynamic Flow:** The belt never stops. High-value VIP packages will appear randomly.
+*   **Opportunity Cost:** If all drones are out on delivery, the player watches helplessly as VIP packages drift off-screen.
+*   **Manual Rejection:** Early game drones are weak. Players must aggressively **Swipe Up** to reject heavy/far packages to cycle the deck and find jobs their "Sparrow" drone can actually perform.
+
+### 3.3. Battery Management
+*   **Charging:** Batteries only charge when on the Rack.
+*   **The Cycle:**
+    1.  Drone returns $\to$ Drag empty battery to Rack.
+    2.  Drag full battery to Drone.
+    3.  Load Package.
+    4.  Launch.
+
+### 3.4. Delivery & Return
+*   **Launch:** Player hits "Deliver." Drone flies up (Z-axis). Camera auto-swipes to the next available drone.
+*   **Timer:** Drone is unavailable for `Distance / Speed` seconds.
+*   **Return:** Drone reappears with 0% battery (or remaining charge). Money is added to the bank.
+
+---
+
+## 4. Progression System
+
+### 4.1. Drone Upgrades
+Each drone has individual stats upgradeable via the **Upgrade Menu**. Costs scale exponentially.
+1.  **Frame (Chassis):**
+    *   *Effect:* Reduces the drone's base weight.
+    *   *Benefit:* Increases available Carry Capacity for cargo.
+2.  **Engines (Rotors):**
+    *   *Effect:* Increases Max Lift and Flight Speed.
+    *   *Benefit:* Allows heavier total payloads and faster return times.
+3.  **Aerodynamics (Passive):**
+    *   *Effect:* Increases energy efficiency.
+    *   *Benefit:* Extends range per battery charge.
+
+### 4.2. The Shop
+*   **Drones:** 10 Models available, from "The Gnat" (Tier 1) to "The Titan" (Tier 10).
+    *   *Sell Option:* Sell old drones for 50% value to fund new ones.
+*   **Batteries:**
+    *   **Light (Li-Po):** Low weight, Low range.
+    *   **Medium (Li-Ion):** Balanced.
+    *   **Heavy (Graphene):** High weight, Extreme range.
+
+### 4.3. Incentives & Bonuses
+*   **Efficiency Bonus:** Returning with <5% battery yields +20% Cash.
+*   **Streak Bonus:** Delivering 5 packages in under 1 minute yields a "Rush Hour" multiplier.
+*   **VIP Packages:** Gold crates appear rarely (2x Cash).
+
+### 4.4. End Game Condition
+The game is "beaten" (soft completion) when the player possesses:
+1.  **5 Top-Tier Drones** (Fully Upgraded).
+2.  **10 Top-Tier Batteries**.
+*   *Post-Game:* Infinite play to maximize leaderboard score or bank balance.
+
+---
+
+## 5. User Experience (UX)
+
+### 5.1. Visual Feedback
+*   **Overweight Warning:** If a package is too heavy, the drone suspension sags visually, sparks fly from the motors, and the Deliver button turns Red ("OVERWEIGHT").
+*   **Range Warning:** If the battery is too weak for the selected package distance, the battery icon flashes Red ("LOW POWER").
+*   **Success:** When launching, cash particles fly into the bank balance immediately (gratification), though the actual transaction completes on return.
+
+### 5.2. Controls
+*   **One-Handed Play:** All critical interactions (Drag Battery, Drag Package, Tap Deliver) are reachable with a thumb.
+*   **Gestures:**
+    *   **Swipe Horizontal:** Change Drone.
+    *   **Swipe Vertical (Up):** Reject Package / Charge Battery.
+    *   **Swipe Vertical (Down):** Load Package / Load Battery.
+
+---
+
+## 6. Technical & Monetization
+
+### 6.1. Technical
+*   **State Saving:** Auto-save on every launch and purchase.
+*   **Offline Progress:** Batteries continue to charge while the app is closed. Drones complete deliveries while closed.
+
+### 6.2. Monetization (Optional)
+*   **Ad-for-Charge:** Watch a 30s ad to instantly charge all batteries on the rack.
+*   **Ad-for-Speed:** Watch a 30s ad to reduce current delivery timers by 50%.
+*   **No Pay-to-Win:** No premium currency that locks hardware. Everything is purchasable with in-game delivery earnings.
