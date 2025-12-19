@@ -24,7 +24,6 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './src/index.html'
         })
-        // REMOVED: CopyWebpackPlugin for HavokPhysics.wasm
     ],
     devServer: {
         static: {

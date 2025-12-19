@@ -1,280 +1,244 @@
 import {
-    Scene,
-    Vector3,
-    HemisphericLight,
-    MeshBuilder,
-    StandardMaterial,
-    Color3,
-    PointerDragBehavior,
-    PointerEventTypes,
-    Animation,
-    ArcRotateCamera
+	Scene,
+	Vector3,
+	HemisphericLight,
+	StandardMaterial,
+	Color3,
+	PointerDragBehavior,
+	ArcRotateCamera,
+	PointerEventTypes
 } from "@babylonjs/core";
 import { GameState } from './gameState';
-
+import { ConveyorBelt } from './conveyorBelt';
+import { BatteryRack } from './batteryRack';
+import { DroneView } from './droneView';
 export class GameScene {
-    constructor (engine, uiManager) {
-        this.engine = engine;
-        this.uiManager = uiManager;
-        this.scene = new Scene(engine);
-        this.scene.clearColor = new Color3(0.1, 0.1, 0.15);
+	constructor (engine, uiManager) {
+		this.engine = engine;
+		this.uiManager = uiManager;
+		this.scene = new Scene(engine);
+		this.scene.clearColor = new Color3(0.1, 0.1, 0.15);
+		// Sub-modules
+		this.conveyor = null;
+		this.rack = null;
+		this.droneView = null;
+	}
+	
+	async init () {
+		this.createCamera();
+		const light = new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
+		light.intensity = 0.8;
+		
+		this.initMaterials();
+		
+		// Initialize Sub-modules
+		// We pass a callback to register drag behavior so the sub-modules don't need to know about the drone logic directly
+		const dragCallback = (mesh) => this.addDragBehavior(mesh);
+		
+		this.droneView = new DroneView(this.scene, this.getMaterialsObject());
+		this.conveyor = new ConveyorBelt(this.scene, this.getMaterialsObject(), dragCallback);
+		this.rack = new BatteryRack(this.scene, this.getMaterialsObject(), dragCallback);
+		
+		this.setupDroneSwipe();
+		
+		this.scene.registerBeforeRender(() => {
+			this.conveyor.update();
+			this.rack.update();
+			this.droneView.updateVisuals();
+		});
+	}
+	
+	createCamera () {
+		const camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2.5, 16, Vector3.Zero(), this.scene);
+		camera.inputs.clear();
+	}
+	
+	initMaterials () {
+		this.matPackage = new StandardMaterial("matPkg", this.scene);
+		this.matPackage.diffuseColor = new Color3(0.6, 0.4, 0.2);
+		
+		this.matTape = new StandardMaterial("matTape", this.scene);
+		this.matTape.diffuseColor = new Color3(0.8, 0.8, 0.8);
+		
+		this.matBatteryCasing = new StandardMaterial("matBatCase", this.scene);
+		this.matBatteryCasing.diffuseColor = new Color3(0.1, 0.5, 0.1);
+		this.matBatteryCasing.alpha = 0.5;
+		
+		this.matBatteryCell = new StandardMaterial("matBatCell", this.scene);
+		this.matBatteryCell.diffuseColor = new Color3(0.2, 0.9, 0.2);
+		
+		this.matDrone = new StandardMaterial("matDrone", this.scene);
+		this.matRotor = new StandardMaterial("matRotor", this.scene);
+		this.matRotor.diffuseColor = new Color3(0.1, 0.1, 0.1);
+	}
 
-        // State
-        this.packages = [];
-        this.batteries = [];
-        this.droneMesh = null;
-    };
+// Helper to pass materials to sub-modules
+	getMaterialsObject () {
+		return {
+			matPackage: this.matPackage,
+			matTape: this.matTape,
+			matBatteryCasing: this.matBatteryCasing,
+			matBatteryCell: this.matBatteryCell,
+			matDrone: this.matDrone,
+			matRotor: this.matRotor
+		};
+	}
 
-    async init () {
-        this.createCamera();
-        const light = new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
-        light.intensity = 0.8;
-
-        this.initMaterials();
-        this.createZones();
-        this.setupInput();
-
-        this.scene.registerBeforeRender(() => {
-            this.updateConveyor();
-            this.updateDroneVisuals();
-        });
-    };
-
-    createCamera () {
-        const camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2.5, 16, Vector3.Zero(), this.scene);
-        camera.inputs.clear();
-    };
-
-    initMaterials () {
-        this.matPackage = new StandardMaterial("matPkg", this.scene);
-        this.matPackage.diffuseColor = new Color3(0.6, 0.4, 0.2);
-
-        this.matBattery = new StandardMaterial("matBat", this.scene);
-        this.matBattery.diffuseColor = new Color3(0.2, 0.8, 0.2);
-
-        this.matDrone = new StandardMaterial("matDrone", this.scene);
-        this.matRotor = new StandardMaterial("matRotor", this.scene);
-        this.matRotor.diffuseColor = new Color3(0.1, 0.1, 0.1);
-    };
-
-    createZones () {
-        const belt = MeshBuilder.CreateBox("belt", { width: 10, height: 0.2, depth: 2 }, this.scene);
-        belt.position.y = 4;
-
-        const rack = MeshBuilder.CreateBox("rack", { width: 8, height: 0.2, depth: 1 }, this.scene);
-        rack.position.y = 1.5;
-
-        this.spawnBattery(-2, 1);
-        this.spawnBattery(0, 2);
-        this.spawnBattery(2, 3);
-
-        this.createDroneMesh();
-    };
-
-    createDroneMesh () {
-        if (this.droneMesh) this.droneMesh.dispose();
-
-        const droneData = GameState.drones[GameState.activeDroneIndex];
-        this.matDrone.diffuseColor = Color3.FromHexString(droneData.color);
-
-        this.droneMesh = MeshBuilder.CreateBox("droneFrame", { width: 1.2, height: 0.2, depth: 1.2 }, this.scene);
-        this.droneMesh.position.y = -3;
-        this.droneMesh.material = this.matDrone;
-
-        const rotorOffsets = [
-            new Vector3(0.8, 0, 0.8),
-            new Vector3(-0.8, 0, 0.8),
-            new Vector3(0.8, 0, -0.8),
-            new Vector3(-0.8, 0, -0.8)
-        ];
-
-        rotorOffsets.forEach((offset, index) => {
-            const arm = MeshBuilder.CreateBox("arm" + index, { width: 1.0, height: 0.1, depth: 0.1 }, this.scene);
-            arm.parent = this.droneMesh;
-            arm.position = offset.scale(0.5);
-            arm.lookAt(this.droneMesh.position.add(offset));
-
-            const rotor = MeshBuilder.CreateCylinder("rotor" + index, { diameter: 0.8, height: 0.1 }, this.scene);
-            rotor.parent = this.droneMesh;
-            rotor.position = offset;
-            rotor.material = this.matRotor;
-        });
-
-        const batSlot = MeshBuilder.CreateBox("batSlot", { size: 0.5 }, this.scene);
-        batSlot.parent = this.droneMesh;
-        batSlot.position.y = 0.3;
-        batSlot.position.z = -0.4;
-        batSlot.visibility = 0.3;
-
-        const pkgSlot = MeshBuilder.CreateBox("pkgSlot", { size: 0.8 }, this.scene);
-        pkgSlot.parent = this.droneMesh;
-        pkgSlot.position.y = -0.6;
-        pkgSlot.visibility = 0.3;
-    };
-
-    spawnPackage () {
-        const pkg = MeshBuilder.CreateBox("package", { size: 0.8 }, this.scene);
-        pkg.position = new Vector3(6, 4.5, 0);
-        pkg.material = this.matPackage;
-
-        const dist = parseFloat((Math.random() * 5 + 1).toFixed(1));
-        const weight = parseFloat((Math.random() * 3 + 0.5).toFixed(1));
-        const reward = Math.floor(dist * 10 + weight * 5);
-
-        pkg.metadata = { type: "package", distance: dist, weight: weight, reward: reward, isDragging: false, onDrone: false };
-        this.packages.push(pkg);
-    };
-
-    spawnBattery (xPos, tier) {
-        const bat = MeshBuilder.CreateBox("battery", { width: 0.5, height: 0.8, depth: 0.3 }, this.scene);
-        bat.position = new Vector3(xPos, 2, 0);
-        bat.material = this.matBattery;
-
-        const weight = tier * 0.5;
-        const charge = tier * 3.0;
-
-        bat.metadata = { type: "battery", weight: weight, charge: charge, isDragging: false, onDrone: false };
-        this.batteries.push(bat);
-    };
-
-    updateConveyor () {
-        if (Math.random() < 0.015) this.spawnPackage();
-
-        for (let i = this.packages.length - 1; i >= 0; i--) {
-            const p = this.packages[i];
-
-            // MODIFIED: Added safety check for disposed meshes to prevent "isDragging" null error
-            if (!p || p.isDisposed()) {
-                this.packages.splice(i, 1);
-                continue;
-            }
-
-            if (!p.metadata.isDragging && !p.metadata.onDrone) {
-                p.position.x -= 0.01;
-
-                if (p.position.x < -6) {
-                    p.dispose();
-                    this.packages.splice(i, 1);
-                }
-            }
-        }
-    };
-
-    setupInput () {
-        const dragBehavior = new PointerDragBehavior({ dragPlaneNormal: new Vector3(0, 0, 1) });
-
-        this.scene.onPointerObservable.add((pointerInfo) => {
-            if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
-                if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh) {
-                    const mesh = pointerInfo.pickInfo.pickedMesh;
-                    if (mesh.metadata && (mesh.metadata.type === 'package' || mesh.metadata.type === 'battery')) {
-                        if (!mesh.behaviors || mesh.behaviors.length === 0) {
-                            mesh.addBehavior(dragBehavior);
-                        }
-                    }
-                }
-            }
-        });
-
-        dragBehavior.onDragStartObservable.add((event) => {
-            const mesh = dragBehavior.attachedNode;
-            mesh.metadata.isDragging = true;
-
-            if (mesh.metadata.onDrone) {
-                mesh.setParent(null);
-                mesh.metadata.onDrone = false;
-                if (mesh.metadata.type === 'package') GameState.currentPackage = null;
-                if (mesh.metadata.type === 'battery') GameState.currentBattery = null;
-            }
-        });
-
-        dragBehavior.onDragEndObservable.add((event) => {
-            const mesh = dragBehavior.attachedNode;
-            mesh.metadata.isDragging = false;
-
-            if (mesh.intersectsMesh(this.droneMesh, false)) {
-                if (mesh.metadata.type === 'package' && !GameState.currentPackage) {
-                    mesh.setParent(this.droneMesh);
-                    mesh.position = new Vector3(0, -0.8, 0);
-                    mesh.rotation = Vector3.Zero();
-                    mesh.metadata.onDrone = true;
-                    GameState.currentPackage = mesh.metadata;
-                    GameState.currentPackage.mesh = mesh;
-                } else if (mesh.metadata.type === 'battery' && !GameState.currentBattery) {
-                    mesh.setParent(this.droneMesh);
-                    mesh.position = new Vector3(0, 0.4, 0);
-                    mesh.rotation = Vector3.Zero();
-                    mesh.metadata.onDrone = true;
-                    GameState.currentBattery = mesh.metadata;
-                    GameState.currentBattery.mesh = mesh;
-                } else {
-                    this.returnToSource(mesh);
-                }
-            } else {
-                this.returnToSource(mesh);
-            }
-        });
-    };
-
-    returnToSource (mesh) {
-        if (mesh.metadata.type === 'battery') {
-            mesh.position = new Vector3(mesh.position.x, 2, 0);
-            mesh.rotation = Vector3.Zero();
-        } else {
-            mesh.position = new Vector3(mesh.position.x, 4.5, 0);
-            mesh.rotation = Vector3.Zero();
-        }
-    };
-
-    updateDroneVisuals () {
-        const status = GameState.checkFlightStatus();
-        if (status.msg.includes("OVERWEIGHT")) {
-            this.droneMesh.position.y = -3.2 + Math.sin(Date.now() * 0.05) * 0.03;
-        } else {
-            this.droneMesh.position.y = -3;
-        }
-    };
-
-    animateDelivery () {
-        const anim = new Animation("fly", "position.y", 60, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
-        const keys = [{ frame: 0, value: -3 }, { frame: 60, value: 10 }];
-        anim.setKeys(keys);
-
-        this.droneMesh.animations = [anim];
-        this.scene.beginAnimation(this.droneMesh, 0, 60, false, 1, () => {
-            this.resetDrone();
-        });
-    };
-
-    resetDrone () {
-        this.droneMesh.position.y = -3;
-
-        // MODIFIED: Explicitly dispose meshes and clear state to ensure updateConveyor skips them
-        if (GameState.currentPackage && GameState.currentPackage.mesh) {
-            GameState.currentPackage.mesh.dispose();
-            GameState.currentPackage = null;
-        }
-
-        if (GameState.currentBattery && GameState.currentBattery.mesh) {
-            GameState.currentBattery.mesh.dispose();
-            GameState.currentBattery = null;
-        }
-    };
-
-    changeDrone (dir) {
-        GameState.activeDroneIndex += dir;
-        if (GameState.activeDroneIndex < 0) GameState.activeDroneIndex = GameState.drones.length - 1;
-        if (GameState.activeDroneIndex >= GameState.drones.length) GameState.activeDroneIndex = 0;
-
-        if (GameState.currentPackage && GameState.currentPackage.mesh) {
-            GameState.currentPackage.mesh.dispose();
-            GameState.currentPackage = null;
-        }
-        if (GameState.currentBattery && GameState.currentBattery.mesh) {
-            GameState.currentBattery.mesh.dispose();
-            GameState.currentBattery = null;
-        }
-
-        this.createDroneMesh();
-    };
+	setupDroneSwipe () {
+		let startX = 0;
+		let isSwipeTarget = false;
+		
+		this.scene.onPointerObservable.add((pointerInfo) => {
+			switch (pointerInfo.type) {
+				case PointerEventTypes.POINTERDOWN:
+					if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh) {
+						// Check if the picked mesh is part of the drone hierarchy
+						const droneMesh = this.droneView ? this.droneView.mesh : null;
+						if (droneMesh) {
+							let mesh = pointerInfo.pickInfo.pickedMesh;
+							let isDrone = false;
+							
+							// Traverse parents to find if we clicked the drone or its parts
+							while (mesh) {
+								if (mesh === droneMesh) {
+									isDrone = true;
+									break;
+								}
+								mesh = mesh.parent;
+							}
+							
+							if (isDrone) {
+								isSwipeTarget = true;
+								startX = this.scene.pointerX;
+							}
+						}
+					}
+					break;
+				
+				case PointerEventTypes.POINTERUP:
+					if (isSwipeTarget) {
+						const endX = this.scene.pointerX;
+						const diff = endX - startX;
+						const threshold = 20; // Sensitivity threshold
+						
+						if (Math.abs(diff) > threshold) {
+							// Swipe Left (diff < 0) -> Next Drone
+							// Swipe Right (diff > 0) -> Previous Drone
+							if (diff > 0) {
+								this.changeDrone(-1);
+							} else {
+								this.changeDrone(1);
+							}
+						}
+						isSwipeTarget = false;
+					}
+					break;
+			}
+		});
+	}
+	
+	addDragBehavior (mesh) {
+		const dragBehavior = new PointerDragBehavior({ dragPlaneNormal: new Vector3(0, 0, 1) });
+		
+		dragBehavior.onDragStartObservable.add((event) => {
+			mesh.metadata.isDragging = true;
+			
+			// Detach from drone if attached
+			if (mesh.metadata.onDrone) {
+				mesh.setParent(null);
+				mesh.metadata.onDrone = false;
+				
+				// Clear GameState
+				if (mesh.metadata.type === 'package') GameState.currentPackage = null;
+				if (mesh.metadata.type === 'battery') GameState.currentBattery = null;
+			}
+		});
+		
+		dragBehavior.onDragEndObservable.add((event) => {
+			mesh.metadata.isDragging = false;
+			
+			const droneMesh = this.droneView ? this.droneView.mesh : null;
+			
+			// Check intersection with drone
+			if (droneMesh && !droneMesh.isDisposed() && mesh.intersectsMesh(droneMesh, false)) {
+				// Load logic
+				if (mesh.metadata.type === 'package' && !GameState.currentPackage) {
+					mesh.setParent(droneMesh);
+					mesh.position = new Vector3(0, -0.8, 0);
+					mesh.rotation = Vector3.Zero();
+					mesh.metadata.onDrone = true;
+					GameState.currentPackage = mesh.metadata;
+					GameState.currentPackage.mesh = mesh;
+				} else if (mesh.metadata.type === 'battery' && !GameState.currentBattery) {
+					mesh.setParent(droneMesh);
+					mesh.position = new Vector3(0, 0.4, 0);
+					mesh.rotation = Vector3.Zero();
+					mesh.metadata.onDrone = true;
+					GameState.currentBattery = mesh.metadata;
+					GameState.currentBattery.mesh = mesh;
+				} else {
+					// Slot occupied
+					this.returnToSource(mesh);
+				}
+			} else {
+				// Missed drone
+				this.returnToSource(mesh);
+			}
+		});
+		
+		mesh.addBehavior(dragBehavior);
+	}
+	
+	returnToSource (mesh) {
+		if (mesh.metadata.type === 'battery') {
+			mesh.position.y = 2;
+			mesh.position.z = 0;
+			mesh.position.x = Math.max(-3.5, Math.min(3.5, mesh.position.x));
+			mesh.rotation = Vector3.Zero();
+		} else {
+			mesh.position.y = 4.5;
+			mesh.position.z = 0;
+			mesh.rotation = Vector3.Zero();
+		}
+	}
+	
+	animateDelivery () {
+		this.droneView.animateDelivery(() => {
+			this.resetDrone();
+		});
+	}
+	
+	resetDrone () {
+		if (GameState.currentPackage && GameState.currentPackage.mesh) {
+			GameState.currentPackage.mesh.dispose();
+			GameState.currentPackage = null;
+		}
+		
+		if (GameState.currentBattery && GameState.currentBattery.mesh) {
+			GameState.currentBattery.charge = 0;
+			if (GameState.currentBattery.uiText) {
+				GameState.currentBattery.uiText.text = "0%";
+				GameState.currentBattery.uiText.color = "#e74c3c";
+			}
+		}
+		
+		this.droneView.animateReturn();
+	}
+	
+	changeDrone (dir) {
+		GameState.activeDroneIndex += dir;
+		if (GameState.activeDroneIndex < 0) GameState.activeDroneIndex = GameState.drones.length - 1;
+		if (GameState.activeDroneIndex >= GameState.drones.length) GameState.activeDroneIndex = 0;
+		
+		if (GameState.currentPackage && GameState.currentPackage.mesh) {
+			this.returnToSource(GameState.currentPackage.mesh);
+			GameState.currentPackage = null;
+		}
+		if (GameState.currentBattery && GameState.currentBattery.mesh) {
+			this.returnToSource(GameState.currentBattery.mesh);
+			GameState.currentBattery = null;
+		}
+		
+		this.droneView.createMesh();
+	}
 }
