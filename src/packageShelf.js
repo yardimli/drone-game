@@ -9,7 +9,6 @@ export class PackageShelf {
 		this.assets = assets;
 		this.packages = [];
 		
-		// --- MODIFIED: Shelf Position ---
 		this.shelfPosition = new Vector3(0, 4.5, 1);
 		
 		this.slots = [
@@ -54,7 +53,6 @@ export class PackageShelf {
 			return false;
 		}
 		
-		// --- MODIFIED: Calculate target based on new shelf position ---
 		const targetPos = this.slots[slotIndex].add(this.shelfPosition);
 		
 		let pkg;

@@ -4,132 +4,121 @@ import {
 	Color3,
 	FreeCamera,
 	HemisphericLight,
-	MeshBuilder,
-	StandardMaterial,
-	Animation,
-	CubicEase,
-	EasingFunction
+	SceneLoader,
+	MeshBuilder
 } from "@babylonjs/core";
-import { AdvancedDynamicTexture, TextBlock, Rectangle } from "@babylonjs/gui";
+import "@babylonjs/loaders/glTF";
+import { AdvancedDynamicTexture, TextBlock, Control } from "@babylonjs/gui";
+import { GameState } from './gameState';
 export class SplashScreen {
-	constructor (engine) {
+	constructor(engine) {
 		this.engine = engine;
 		this.scene = new Scene(engine);
-		this.scene.clearColor = new Color3(0.1, 0.1, 0.15); // Match game background
+		this.scene.clearColor = new Color3(0.1, 0.1, 0.15);
 	}
-	async show () {
+	
+	async show() {
 		// Setup Scene
-		const camera = new FreeCamera("splashCam", new Vector3(0, 0, -10), this.scene);
+		const camera = new FreeCamera("splashCam", new Vector3(0, 0, -25), this.scene);
 		camera.setTarget(Vector3.Zero());
 		
 		const light = new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 		light.intensity = 1.0;
 		
-		// Create Drone Mesh (Simplified visual)
-		const drone = this.createDrone();
-		drone.position.x = -10; // Start off-screen left
-		
-		// UI Overlay
+		// UI
 		const adt = AdvancedDynamicTexture.CreateFullscreenUI("SplashUI", true, this.scene);
 		
 		const title = new TextBlock();
 		title.text = "SkyDrop Logistics";
 		title.color = "white";
-		title.fontSize = 48;
+		title.fontSize = 40;
 		title.fontWeight = "bold";
-		title.alpha = 0;
+		title.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		title.paddingTop = "50px";
 		adt.addControl(title);
 		
-		// Fade Rectangle (starts transparent, fades to black)
-		const fadeRect = new Rectangle();
-		fadeRect.background = "black";
-		fadeRect.alpha = 0;
-		fadeRect.thickness = 0;
-		adt.addControl(fadeRect);
+		const statusText = new TextBlock();
+		statusText.text = "Tap to Start";
+		statusText.color = "white";
+		statusText.fontSize = 30;
+		statusText.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+		statusText.paddingBottom = "50px";
+		statusText.alpha = 0; // Hidden until loaded
+		adt.addControl(statusText);
 		
-		// --- Animations ---
-		const frameRate = 60;
+		const renderLoop = () => {
+			this.scene.render();
+		};
+		this.engine.runRenderLoop(renderLoop);
 		
-		// 1. Drone Fly In (Left to Center to Right)
-		const animDrone = new Animation("droneFly", "position.x", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
-		const keysDrone = [
-			{ frame: 0, value: -10 },
-			{ frame: 60, value: 0 },   // Arrive center
-			{ frame: 120, value: 0 },  // Hover
-			{ frame: 180, value: 10 }  // Fly out right
+		// Collect all assets to display
+		const assetsToLoad = [
+			...GameState.drones.map(d => ({...d, type: 'drone'})),
+			...GameState.packageTypes.map(p => ({...p, type: 'package'}))
 		];
-		animDrone.setKeys(keysDrone);
 		
-		const ease = new CubicEase();
-		ease.setEasingMode(EasingFunction.EASINGMODE_EASEOUT);
-		animDrone.setEasingFunction(ease);
+		for (const item of assetsToLoad) {
+			try {
+				// Random Position (Portrait distribution)
+				const x = (Math.random() * 10) - 5;
+				const y = (Math.random() * 20) - 10;
+				
+				const result = await SceneLoader.ImportMeshAsync("", "./assets/", item.model, this.scene);
+				
+				// The first mesh is usually the root for GLB
+				const root = result.meshes[0];
+				
+				// Normalize parent for positioning
+				root.position = new Vector3(x, y, 0);
+				
+				if (item.scale) {
+					root.scaling = item.scale.clone();
+				}
+				
+				if (item.rotationOffset) {
+					// Clone to avoid modifying the global GameState when spinning
+					root.rotation = item.rotationOffset.clone();
+				}
+				
+				// Spin Animation
+				this.scene.registerBeforeRender(() => {
+					if (root && !root.isDisposed()) {
+						root.rotation.y += 0.02;
+					}
+				});
+				
+				// Create ID Label
+				const plane = MeshBuilder.CreatePlane("lbl_" + item.id, {width: 6, height: 3}, this.scene);
+				plane.position = new Vector3(x, y, -3);
+				plane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
+				
+				const labelAdt = AdvancedDynamicTexture.CreateForMesh(plane);
+				const text = new TextBlock();
+				text.text = item.id;
+				text.color = "#f1c40f";
+				text.fontSize = 120;
+				text.fontWeight = "bold";
+				text.outlineColor = "black";
+				text.outlineWidth = 8;
+				labelAdt.addControl(text);
+				
+				// Delay to allow visual update
+				await new Promise(resolve => setTimeout(resolve, 250));
+				
+			} catch (err) {
+				console.error("Error loading " + item.id, err);
+			}
+		}
 		
-		drone.animations.push(animDrone);
-		
-		// 2. Title Fade In/Out
-		const animTitle = new Animation("titleFade", "alpha", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
-		const keysTitle = [
-			{ frame: 0, value: 0 },
-			{ frame: 40, value: 1 },   // Fade in
-			{ frame: 140, value: 1 },  // Hold
-			{ frame: 160, value: 0 }   // Fade out
-		];
-		animTitle.setKeys(keysTitle);
-		
-		// 3. Screen Fade Out (To Black)
-		const animFade = new Animation("screenFade", "alpha", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
-		const keysFade = [
-			{ frame: 150, value: 0 },
-			{ frame: 180, value: 1 }   // Full black at end
-		];
-		animFade.setKeys(keysFade);
-		
-		// Start Animations
-		this.scene.beginAnimation(drone, 0, 180, false);
-		this.scene.beginDirectAnimation(title, [animTitle], 0, 180, false);
-		this.scene.beginDirectAnimation(fadeRect, [animFade], 0, 180, false);
+		statusText.alpha = 1;
 		
 		return new Promise((resolve) => {
-			const renderLoop = () => {
-				this.scene.render();
-			};
-			this.engine.runRenderLoop(renderLoop);
-			
-			// End after 3 seconds (180 frames @ 60fps)
-			setTimeout(() => {
+			// Wait for user input to proceed
+			this.scene.onPointerUp = () => {
 				this.engine.stopRenderLoop(renderLoop);
 				this.scene.dispose();
 				resolve();
-			}, 1000);
+			};
 		});
-	}
-	
-	createDrone () {
-		const mesh = MeshBuilder.CreateBox("drone", { width: 1.2, height: 0.2, depth: 1.2 }, this.scene);
-		const mat = new StandardMaterial("droneMat", this.scene);
-		mat.diffuseColor = new Color3(0.2, 0.6, 1);
-		mesh.material = mat;
-		
-		// Simple Rotors
-		const offsets = [
-			new Vector3(0.8, 0, 0.8), new Vector3(-0.8, 0, 0.8),
-			new Vector3(0.8, 0, -0.8), new Vector3(-0.8, 0, -0.8)
-		];
-		
-		offsets.forEach(offset => {
-			const arm = MeshBuilder.CreateBox("arm", { width: 1.0, height: 0.1, depth: 0.1 }, this.scene);
-			arm.parent = mesh;
-			arm.position = offset.scale(0.5);
-			arm.lookAt(mesh.position.add(offset));
-			
-			const rotor = MeshBuilder.CreateCylinder("rotor", { diameter: 0.8, height: 0.1 }, this.scene);
-			rotor.parent = mesh;
-			rotor.position = offset;
-			const rMat = new StandardMaterial("rMat", this.scene);
-			rMat.diffuseColor = new Color3(0.1, 0.1, 0.1);
-			rotor.material = rMat;
-		});
-		
-		return mesh;
 	}
 }

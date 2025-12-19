@@ -20,7 +20,7 @@ export class CustomerCounter {
 	
 	createCustomerMesh () {
 		this.customerMesh = MeshBuilder.CreatePlane("customer", { width: 2, height: 2 }, this.scene);
-		// --- MODIFIED: Position behind desk ---
+
 		this.hiddenPos = new Vector3(0, 6, 3); // Hidden below desk
 		this.visiblePos = new Vector3(0, 9.5, 3); // Visible above desk
 		
@@ -36,7 +36,7 @@ export class CustomerCounter {
 	
 	createSpeechBubble () {
 		this.bubblePlane = MeshBuilder.CreatePlane("bubble", { width: 4, height: 2.5 }, this.scene);
-		// --- MODIFIED: Position below desk ---
+
 		this.bubblePlane.position = new Vector3(0, 6.5, 0);
 		this.bubblePlane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
 		this.bubblePlane.visibility = 0;

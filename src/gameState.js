@@ -4,7 +4,7 @@ export const GameState = {
 	money: 1250,
 	activeDroneIndex: 0,
 	
-	// --- NEW: Detailed Customer Profiles ---
+	// Customer Profiles
 	customers: [
 		{ file: "girl1.jpg", name: "Alice", trait: "Generous", payMult: 1.3, timeMult: 1.0 },
 		{ file: "girl2.jpg", name: "Bella", trait: "Urgent", payMult: 1.2, timeMult: 0.7 },
@@ -18,7 +18,7 @@ export const GameState = {
 		{ file: "boy6.jpg", name: "Jack", trait: "Stingy", payMult: 0.75, timeMult: 1.1 }
 	],
 	
-	// --- NEW: Dialogue Templates ---
+	// Dialogue Templates
 	dialogue: {
 		greetings: [
 			"Hello there!",
@@ -98,21 +98,21 @@ export const GameState = {
 			id: "pkg3",
 			weight: 2.0,
 			model: "package3.glb",
-			scale: new Vector3(4, 4, 4),
+			scale: new Vector3(5, 5, 5),
 			rotationOffset: new Vector3(0, 10, 0)
 		},
 		{
 			id: "pkg4",
 			weight: 3.5,
 			model: "package4.glb",
-			scale: new Vector3(4, 4, 4),
+			scale: new Vector3(1.5, 1.5, 1.5),
 			rotationOffset: new Vector3(0, 10, 0)
 		},
 		{
 			id: "pkg5",
 			weight: 5.0,
 			model: "package5.glb",
-			scale: new Vector3(4, 4, 4),
+			scale: new Vector3(1.5, 1.5, 1.5),
 			rotationOffset: new Vector3(0, 10, 0)
 		}
 	],

@@ -7,8 +7,6 @@ export class BatteryRack {
 		this.materials = materials;
 		this.registerDragCallback = registerDragCallback;
 		this.batteries = [];
-		
-		// --- MODIFIED: Rack Base Height ---
 		this.rackHeight = 1.5;
 		
 		this.matBarOn = new StandardMaterial("matBarOn", this.scene);
@@ -33,7 +31,7 @@ export class BatteryRack {
 	
 	spawnBattery (xPos, tier) {
 		const batRoot = MeshBuilder.CreateBox("batteryRoot", { width: 0.6, height: 0.8, depth: 0.4 }, this.scene);
-		// --- MODIFIED: Spawn relative to rack height ---
+
 		batRoot.position = new Vector3(xPos, this.rackHeight + 0.5, 0);
 		batRoot.visibility = 0;
 		

@@ -8,7 +8,7 @@ import {
 	ArcRotateCamera,
 	PointerEventTypes,
 	SceneLoader,
-	Camera // --- NEW: Import Camera for constants
+	Camera
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { GameState } from './gameState';
@@ -217,13 +217,11 @@ export class GameScene {
 		if (mesh.metadata) mesh.metadata.onDrone = false;
 		
 		if (mesh.metadata.type === 'battery') {
-			// --- MODIFIED: Return to new Rack Y position ---
 			mesh.position.y = 2;
 			mesh.position.z = 0;
 			mesh.position.x = Math.max(-3.5, Math.min(3.5, mesh.position.x));
 			mesh.rotation = Vector3.Zero();
 		} else {
-			// --- MODIFIED: Return to new Shelf Y position ---
 			mesh.position = new Vector3(0, 4.5, 1);
 			mesh.rotation = Vector3.Zero();
 		}

@@ -10,10 +10,10 @@ export class UIManager {
 	};
 	
 	createHUD () {
-		// Zone 1: The HUD (Top 10%)
+		// Zone 1: The HUD (Top 5%)
 		const topPanel = new Grid();
 		topPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-		topPanel.height = "10%";
+		topPanel.height = "5%";
 		topPanel.background = "rgba(44, 62, 80, 0.9)";
 		topPanel.addColumnDefinition(0.5);
 		topPanel.addColumnDefinition(0.5);
@@ -38,7 +38,6 @@ export class UIManager {
 	};
 	
 	createControlDeck () {
-		// Zone 5: Control Deck (Bottom 15%) - Reduced height
 		const bottomContainer = new StackPanel();
 		bottomContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 		bottomContainer.height = "15%";
@@ -95,7 +94,6 @@ export class UIManager {
 		buttonGrid.addControl(upgradeBtn, 0, 2);
 	};
 
-// --- NEW: Fade In Method ---
 	fadeIn () {
 		const fadeRect = new Rectangle("fadeRect");
 		fadeRect.background = "black";

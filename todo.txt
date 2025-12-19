@@ -1,0 +1,1 @@
+this is a Babylon.js v8.42.0 - WebGL2 - Parallel shader compilation game. it is designed to work on the phone in portrait mode.

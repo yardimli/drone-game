@@ -34,7 +34,7 @@ export class DroneView {
 			mesh = MeshBuilder.CreateBox("droneFallback", { size: 1 }, this.scene);
 		}
 		
-		// --- Default Position ---
+		// Default Position
 		mesh.position = startPosition || new Vector3(0, -1, 0);
 		
 		const batSlot = MeshBuilder.CreateBox("batSlot", { size: 0.5 }, this.scene);
@@ -74,7 +74,6 @@ export class DroneView {
 		}
 		
 		const startX = direction * slideDist;
-		// --- Maintain Y position ---
 		const newMesh = this.createMesh(new Vector3(startX, -1, 0));
 		this.mesh = newMesh;
 		
@@ -97,7 +96,6 @@ export class DroneView {
 		if (!this.mesh) return;
 		
 		const status = GameState.checkFlightStatus();
-		// --- Hover around new Y ---
 		const baseY = -1;
 		
 		if (status.msg.includes("OVERWEIGHT")) {
@@ -114,7 +112,6 @@ export class DroneView {
 		const frameRate = 60;
 		const animGroup = new AnimationGroup("delivery");
 		
-		// --- MODIFIED: Animation Keys for new Y ---
 		const animY = new Animation("flyY", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysY = [
 			{ frame: 0, value: -1.0 },
