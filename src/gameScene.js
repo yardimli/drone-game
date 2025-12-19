@@ -7,12 +7,13 @@ import {
 	PointerDragBehavior,
 	ArcRotateCamera,
 	PointerEventTypes,
-	SceneLoader // --- NEW: Import SceneLoader
+	SceneLoader,
+	Camera // --- NEW: Import Camera for constants
 } from "@babylonjs/core";
-// --- NEW: Import GLB loader side-effects ---
 import "@babylonjs/loaders/glTF";
 import { GameState } from './gameState';
-import { ConveyorBelt } from './conveyorBelt';
+import { PackageShelf } from './packageShelf';
+import { CustomerCounter } from './customerCounter';
 import { BatteryRack } from './batteryRack';
 import { DroneView } from './droneView';
 
@@ -22,12 +23,12 @@ export class GameScene {
 		this.uiManager = uiManager;
 		this.scene = new Scene(engine);
 		this.scene.clearColor = new Color3(0.1, 0.1, 0.15);
-		// Sub-modules
-		this.conveyor = null;
+		
+		this.shelf = null;
+		this.customer = null;
 		this.rack = null;
 		this.droneView = null;
 		
-		// --- NEW: Store loaded asset containers ---
 		this.assets = {};
 	}
 	
@@ -38,32 +39,28 @@ export class GameScene {
 		
 		this.initMaterials();
 		
-		// --- NEW: Load all GLB assets before creating game objects ---
 		await this.loadAssets();
 		
-		// Initialize Sub-modules
 		const dragCallback = (mesh) => this.addDragBehavior(mesh);
 		
-		// --- MODIFIED: Pass loaded assets to DroneView and ConveyorBelt ---
 		this.droneView = new DroneView(this.scene, this.getMaterialsObject(), this.assets);
-		this.conveyor = new ConveyorBelt(this.scene, this.getMaterialsObject(), dragCallback, this.assets);
-		
+		this.shelf = new PackageShelf(this.scene, this.getMaterialsObject(), dragCallback, this.assets);
+		this.customer = new CustomerCounter(this.scene, this.shelf);
 		this.rack = new BatteryRack(this.scene, this.getMaterialsObject(), dragCallback);
 		
 		this.setupDroneSwipe();
 		
 		this.scene.registerBeforeRender(() => {
-			this.conveyor.update();
+			this.shelf.update();
+			this.customer.update();
 			this.rack.update();
 			this.droneView.updateVisuals();
 		});
 	}
 	
-	// --- NEW: Asset Loading Logic ---
-	async loadAssets() {
+	async loadAssets () {
 		const loadPromises = [];
 		
-		// Load Drones
 		GameState.drones.forEach(drone => {
 			const p = SceneLoader.LoadAssetContainerAsync("./assets/", drone.model, this.scene)
 				.then(container => {
@@ -72,7 +69,6 @@ export class GameScene {
 			loadPromises.push(p);
 		});
 		
-		// Load Packages
 		GameState.packageTypes.forEach(pkg => {
 			const p = SceneLoader.LoadAssetContainerAsync("./assets/", pkg.model, this.scene)
 				.then(container => {
@@ -86,7 +82,8 @@ export class GameScene {
 	}
 	
 	createCamera () {
-		const camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2.5, 16, Vector3.Zero(), this.scene);
+		const camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 18, new Vector3(0, 3, 0), this.scene);
+		
 		camera.inputs.clear();
 	}
 	
@@ -189,7 +186,7 @@ export class GameScene {
 			
 			const droneMesh = this.droneView ? this.droneView.mesh : null;
 			
-			if (droneMesh && !droneMesh.isDisposed() && mesh.intersectsMesh(droneMesh, true)) { // Changed to true for recursive check
+			if (droneMesh && !droneMesh.isDisposed() && mesh.intersectsMesh(droneMesh, true)) {
 				if (mesh.metadata.type === 'package' && !GameState.currentPackage) {
 					mesh.setParent(droneMesh);
 					mesh.position = new Vector3(0, -0.8, 0);
@@ -216,14 +213,18 @@ export class GameScene {
 	}
 	
 	returnToSource (mesh) {
+		mesh.setParent(null);
+		if (mesh.metadata) mesh.metadata.onDrone = false;
+		
 		if (mesh.metadata.type === 'battery') {
+			// --- MODIFIED: Return to new Rack Y position ---
 			mesh.position.y = 2;
 			mesh.position.z = 0;
 			mesh.position.x = Math.max(-3.5, Math.min(3.5, mesh.position.x));
 			mesh.rotation = Vector3.Zero();
 		} else {
-			mesh.position.y = 4.5;
-			mesh.position.z = 0;
+			// --- MODIFIED: Return to new Shelf Y position ---
+			mesh.position = new Vector3(0, 4.5, 1);
 			mesh.rotation = Vector3.Zero();
 		}
 	}

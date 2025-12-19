@@ -2,11 +2,10 @@ import { MeshBuilder, Vector3, Color3, Animation, AnimationGroup, CubicEase, Eas
 import { GameState } from './gameState';
 
 export class DroneView {
-	// --- MODIFIED: Accept assets in constructor ---
 	constructor (scene, materials, assets) {
 		this.scene = scene;
 		this.materials = materials;
-		this.assets = assets; // Store assets
+		this.assets = assets;
 		this.mesh = null;
 		this.createMesh();
 	}
@@ -14,50 +13,40 @@ export class DroneView {
 	createMesh (startPosition = null) {
 		const droneData = GameState.drones[GameState.activeDroneIndex];
 		
-		// --- NEW: Instantiate GLB from AssetContainer ---
 		let mesh;
 		const container = this.assets[droneData.id];
 		
 		if (container) {
-			// Instantiate the model hierarchy
 			const entries = container.instantiateModelsToScene();
 			const root = entries.rootNodes[0];
 			
-			// Create a parent wrapper for logic/animation consistency
 			mesh = MeshBuilder.CreateBox("droneWrapper", { size: 0.1 }, this.scene);
-			mesh.visibility = 0; // Invisible wrapper
+			mesh.visibility = 0;
 			
 			root.parent = mesh;
-			
-			// Apply Config Transforms
 			root.scaling = droneData.scale;
 			root.rotation = droneData.rotationOffset;
 			
-			// Ensure child meshes are pickable for drag logic
 			root.getChildMeshes().forEach(m => {
 				m.isPickable = true;
 			});
 		} else {
-			// Fallback if asset missing
 			mesh = MeshBuilder.CreateBox("droneFallback", { size: 1 }, this.scene);
 		}
 		
-		mesh.position = startPosition || new Vector3(0, -3, 0);
+		// --- Default Position ---
+		mesh.position = startPosition || new Vector3(0, -1, 0);
 		
-		// --- NOTE: Rotors are now part of the GLB, so we skip manual rotor creation ---
-		// If you need to animate rotors, you would find them by name in the GLB children here.
-		
-		// Create invisible slots for attachment logic
 		const batSlot = MeshBuilder.CreateBox("batSlot", { size: 0.5 }, this.scene);
 		batSlot.parent = mesh;
 		batSlot.position.y = 0.3;
 		batSlot.position.z = -0.4;
-		batSlot.visibility = 0; // Hidden
+		batSlot.visibility = 0;
 		
 		const pkgSlot = MeshBuilder.CreateBox("pkgSlot", { size: 0.8 }, this.scene);
 		pkgSlot.parent = mesh;
 		pkgSlot.position.y = -0.6;
-		pkgSlot.visibility = 0; // Hidden
+		pkgSlot.visibility = 0;
 		
 		if (!this.mesh && !startPosition) {
 			this.mesh = mesh;
@@ -85,7 +74,8 @@ export class DroneView {
 		}
 		
 		const startX = direction * slideDist;
-		const newMesh = this.createMesh(new Vector3(startX, -3, 0));
+		// --- Maintain Y position ---
+		const newMesh = this.createMesh(new Vector3(startX, -1, 0));
 		this.mesh = newMesh;
 		
 		const animIn = new Animation("slideIn", "position.x", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
@@ -107,11 +97,14 @@ export class DroneView {
 		if (!this.mesh) return;
 		
 		const status = GameState.checkFlightStatus();
+		// --- Hover around new Y ---
+		const baseY = -1;
+		
 		if (status.msg.includes("OVERWEIGHT")) {
-			this.mesh.position.y = -3.2 + Math.sin(Date.now() * 0.05) * 0.03;
+			this.mesh.position.y = (baseY - 0.2) + Math.sin(Date.now() * 0.05) * 0.03;
 		} else {
-			if (Math.abs(this.mesh.position.x) < 0.1 && Math.abs(this.mesh.position.y - (-3)) < 0.5) {
-				this.mesh.position.y = -3 + Math.sin(Date.now() * 0.002) * 0.05;
+			if (Math.abs(this.mesh.position.x) < 0.1 && Math.abs(this.mesh.position.y - baseY) < 0.5) {
+				this.mesh.position.y = baseY + Math.sin(Date.now() * 0.002) * 0.05;
 			}
 		}
 	}
@@ -121,13 +114,14 @@ export class DroneView {
 		const frameRate = 60;
 		const animGroup = new AnimationGroup("delivery");
 		
+		// --- MODIFIED: Animation Keys for new Y ---
 		const animY = new Animation("flyY", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysY = [
-			{ frame: 0, value: -3 },
-			{ frame: 20, value: -2.9 },
-			{ frame: 40, value: -3.1 },
-			{ frame: 60, value: -3 },
-			{ frame: 80, value: -3 },
+			{ frame: 0, value: -1.0 },
+			{ frame: 20, value: -0.8 },
+			{ frame: 40, value: -1.2 },
+			{ frame: 60, value: -1.0 },
+			{ frame: 80, value: -1.0 },
 			{ frame: 120, value: 0 },
 			{ frame: 180, value: 6 }
 		];
@@ -186,9 +180,9 @@ export class DroneView {
 		const animY = new Animation("returnY", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysY = [
 			{ frame: 0, value: 5 },
-			{ frame: 50, value: -1 },
-			{ frame: 80, value: -2.5 },
-			{ frame: 120, value: -3 }
+			{ frame: 50, value: 1 },
+			{ frame: 80, value: 0 },
+			{ frame: 120, value: -1.0 }
 		];
 		animY.setKeys(keysY);
 		

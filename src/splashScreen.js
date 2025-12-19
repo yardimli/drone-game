@@ -100,7 +100,7 @@ export class SplashScreen {
 				this.engine.stopRenderLoop(renderLoop);
 				this.scene.dispose();
 				resolve();
-			}, 3000);
+			}, 1000);
 		});
 	}
 	
