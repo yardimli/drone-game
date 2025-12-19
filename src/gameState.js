@@ -1,4 +1,4 @@
-import { Vector3 } from "@babylonjs/core";
+import {Vector3} from "@babylonjs/core";
 
 export const GameState = {
 	money: 1250,
@@ -6,16 +6,16 @@ export const GameState = {
 	
 	// Customer Profiles
 	customers: [
-		{ file: "girl1.jpg", name: "Alice", trait: "Generous", payMult: 1.3, timeMult: 1.0 },
-		{ file: "girl2.jpg", name: "Bella", trait: "Urgent", payMult: 1.2, timeMult: 0.7 },
-		{ file: "girl3.jpg", name: "Carla", trait: "Standard", payMult: 1.0, timeMult: 1.0 },
-		{ file: "girl4.jpg", name: "Diana", trait: "Patient", payMult: 0.9, timeMult: 1.4 },
-		{ file: "boy1.jpg", name: "Evan", trait: "Stingy", payMult: 0.8, timeMult: 1.0 },
-		{ file: "boy2.jpg", name: "Frank", trait: "Generous", payMult: 1.25, timeMult: 1.0 },
-		{ file: "boy3.jpg", name: "George", trait: "Urgent", payMult: 1.15, timeMult: 0.6 },
-		{ file: "boy4.jpg", name: "Henry", trait: "Standard", payMult: 1.0, timeMult: 1.0 },
-		{ file: "boy5.jpg", name: "Ian", trait: "Patient", payMult: 0.95, timeMult: 1.3 },
-		{ file: "boy6.jpg", name: "Jack", trait: "Stingy", payMult: 0.75, timeMult: 1.1 }
+		{file: "girl1.jpg", name: "Alice", trait: "Generous", payMult: 1.3, timeMult: 1.0},
+		{file: "girl2.jpg", name: "Bella", trait: "Urgent", payMult: 1.2, timeMult: 0.7},
+		{file: "girl3.jpg", name: "Carla", trait: "Standard", payMult: 1.0, timeMult: 1.0},
+		{file: "girl4.jpg", name: "Diana", trait: "Patient", payMult: 0.9, timeMult: 1.4},
+		{file: "boy1.jpg", name: "Evan", trait: "Stingy", payMult: 0.8, timeMult: 1.0},
+		{file: "boy2.jpg", name: "Frank", trait: "Generous", payMult: 1.25, timeMult: 1.0},
+		{file: "boy3.jpg", name: "George", trait: "Urgent", payMult: 1.15, timeMult: 0.6},
+		{file: "boy4.jpg", name: "Henry", trait: "Standard", payMult: 1.0, timeMult: 1.0},
+		{file: "boy5.jpg", name: "Ian", trait: "Patient", payMult: 0.95, timeMult: 1.3},
+		{file: "boy6.jpg", name: "Jack", trait: "Stingy", payMult: 0.75, timeMult: 1.1}
 	],
 	
 	// Dialogue Templates
@@ -120,20 +120,20 @@ export const GameState = {
 	currentBattery: null,
 	currentPackage: null,
 	
-	checkFlightStatus: function() {
+	checkFlightStatus: function () {
 		const drone = this.drones[this.activeDroneIndex];
 		
 		if (!this.currentBattery || !this.currentPackage) {
-			return { valid: false, msg: "LOAD COMPONENTS", color: "#95a5a6" };
+			return {valid: false, msg: "LOAD COMPONENTS", color: "#95a5a6"};
 		}
 		
 		const totalWeight = drone.baseWeight + this.currentBattery.weight + this.currentPackage.weight;
 		const weightValid = totalWeight <= drone.lift;
 		const rangeValid = this.currentBattery.charge >= this.currentPackage.distance;
 		
-		if (!weightValid) return { valid: false, msg: "OVERWEIGHT!", color: "#c0392b" };
-		if (!rangeValid) return { valid: false, msg: "LOW RANGE", color: "#e67e22" };
+		if (!weightValid) return {valid: false, msg: "OVERWEIGHT!", color: "#c0392b"};
+		if (!rangeValid) return {valid: false, msg: "LOW RANGE", color: "#e67e22"};
 		
-		return { valid: true, msg: "DELIVER", color: "#27ae60" };
+		return {valid: true, msg: "DELIVER", color: "#27ae60"};
 	}
 };

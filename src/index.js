@@ -1,14 +1,15 @@
-import { Engine } from "@babylonjs/core";
-import { GameScene } from './gameScene';
-import { UIManager } from './ui';
-import { GameState } from './gameState';
-import { SplashScreen } from './splashScreen';
+import {Engine} from "@babylonjs/core";
+import {GameScene} from './gameScene';
+import {UIManager} from './ui';
+import {GameState} from './gameState';
+import {SplashScreen} from './splashScreen';
+
 const canvas = document.getElementById("renderCanvas");
 const engine = new Engine(canvas, true);
 const initGame = async () => {
 	const splash = new SplashScreen(engine);
 	await splash.show();
-
+	
 	const handleDeliver = () => {
 		const status = GameState.checkFlightStatus();
 		if (status.valid) {

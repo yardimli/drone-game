@@ -1,9 +1,18 @@
-import { MeshBuilder, Vector3, StandardMaterial, Texture, Color3, Animation, CubicEase, EasingFunction } from "@babylonjs/core";
-import { AdvancedDynamicTexture, TextBlock, Rectangle, Button, StackPanel, Control } from "@babylonjs/gui";
-import { GameState } from './gameState';
+import {
+	MeshBuilder,
+	Vector3,
+	StandardMaterial,
+	Texture,
+	Color3,
+	Animation,
+	CubicEase,
+	EasingFunction
+} from "@babylonjs/core";
+import {AdvancedDynamicTexture, TextBlock, Rectangle, Button, StackPanel, Control} from "@babylonjs/gui";
+import {GameState} from './gameState';
 
 export class CustomerCounter {
-	constructor (scene, shelfInstance) {
+	constructor(scene, shelfInstance) {
 		this.scene = scene;
 		this.shelf = shelfInstance;
 		
@@ -18,9 +27,9 @@ export class CustomerCounter {
 		this.createSpeechBubble();
 	}
 	
-	createCustomerMesh () {
-		this.customerMesh = MeshBuilder.CreatePlane("customer", { width: 2, height: 2 }, this.scene);
-
+	createCustomerMesh() {
+		this.customerMesh = MeshBuilder.CreatePlane("customer", {width: 2, height: 2}, this.scene);
+		
 		this.hiddenPos = new Vector3(0, 6, 3); // Hidden below desk
 		this.visiblePos = new Vector3(0, 9.5, 3); // Visible above desk
 		
@@ -34,9 +43,9 @@ export class CustomerCounter {
 		this.customerMesh.material = this.customerMat;
 	}
 	
-	createSpeechBubble () {
-		this.bubblePlane = MeshBuilder.CreatePlane("bubble", { width: 4, height: 2.5 }, this.scene);
-
+	createSpeechBubble() {
+		this.bubblePlane = MeshBuilder.CreatePlane("bubble", {width: 4, height: 2.5}, this.scene);
+		
 		this.bubblePlane.position = new Vector3(0, 6.5, 0);
 		this.bubblePlane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
 		this.bubblePlane.visibility = 0;
@@ -97,7 +106,7 @@ export class CustomerCounter {
 		this.btnPanel.addControl(btnDecline);
 	}
 	
-	update () {
+	update() {
 		const dt = this.scene.getEngine().getDeltaTime();
 		
 		if (this.state === "WAITING") {
@@ -108,7 +117,7 @@ export class CustomerCounter {
 		}
 	}
 	
-	spawnCustomer () {
+	spawnCustomer() {
 		this.state = "ARRIVING";
 		
 		const customers = GameState.customers;
@@ -122,8 +131,8 @@ export class CustomerCounter {
 		const frameRate = 60;
 		const anim = new Animation("popIn", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keys = [
-			{ frame: 0, value: this.hiddenPos.y },
-			{ frame: 40, value: this.visiblePos.y }
+			{frame: 0, value: this.hiddenPos.y},
+			{frame: 40, value: this.visiblePos.y}
 		];
 		anim.setKeys(keys);
 		const ease = new CubicEase();
@@ -136,7 +145,7 @@ export class CustomerCounter {
 		});
 	}
 	
-	generateJob () {
+	generateJob() {
 		this.state = "TALKING";
 		
 		const typeIndex = Math.floor(Math.random() * GameState.packageTypes.length);
@@ -175,7 +184,7 @@ export class CustomerCounter {
 		this.startTypewriter(message);
 	}
 	
-	startTypewriter (fullText) {
+	startTypewriter(fullText) {
 		this.bubblePlane.visibility = 1;
 		this.textBlock.text = "";
 		this.btnPanel.isVisible = false;
@@ -196,7 +205,7 @@ export class CustomerCounter {
 		}, speed);
 	}
 	
-	acceptJob () {
+	acceptJob() {
 		if (this.shelf.addPackage(this.currentJob)) {
 			this.leaveCustomer();
 		} else {
@@ -204,11 +213,11 @@ export class CustomerCounter {
 		}
 	}
 	
-	declineJob () {
+	declineJob() {
 		this.leaveCustomer();
 	}
 	
-	leaveCustomer () {
+	leaveCustomer() {
 		this.state = "LEAVING";
 		this.bubblePlane.visibility = 0;
 		if (this.typeInterval) clearInterval(this.typeInterval);
@@ -216,8 +225,8 @@ export class CustomerCounter {
 		const frameRate = 60;
 		const anim = new Animation("popOut", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keys = [
-			{ frame: 0, value: this.visiblePos.y },
-			{ frame: 30, value: this.hiddenPos.y }
+			{frame: 0, value: this.visiblePos.y},
+			{frame: 30, value: this.hiddenPos.y}
 		];
 		anim.setKeys(keys);
 		

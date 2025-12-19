@@ -11,14 +11,14 @@ import {
 	Camera
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
-import { GameState } from './gameState';
-import { PackageShelf } from './packageShelf';
-import { CustomerCounter } from './customerCounter';
-import { BatteryRack } from './batteryRack';
-import { DroneView } from './droneView';
+import {GameState} from './gameState';
+import {PackageShelf} from './packageShelf';
+import {CustomerCounter} from './customerCounter';
+import {BatteryRack} from './batteryRack';
+import {DroneView} from './droneView';
 
 export class GameScene {
-	constructor (engine, uiManager) {
+	constructor(engine, uiManager) {
 		this.engine = engine;
 		this.uiManager = uiManager;
 		this.scene = new Scene(engine);
@@ -32,7 +32,7 @@ export class GameScene {
 		this.assets = {};
 	}
 	
-	async init () {
+	async init() {
 		this.createCamera();
 		const light = new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 		light.intensity = 0.8;
@@ -58,7 +58,7 @@ export class GameScene {
 		});
 	}
 	
-	async loadAssets () {
+	async loadAssets() {
 		const loadPromises = [];
 		
 		GameState.drones.forEach(drone => {
@@ -81,13 +81,13 @@ export class GameScene {
 		console.log("All assets loaded");
 	}
 	
-	createCamera () {
+	createCamera() {
 		const camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 18, new Vector3(0, 3, 0), this.scene);
 		
 		camera.inputs.clear();
 	}
 	
-	initMaterials () {
+	initMaterials() {
 		this.matPackage = new StandardMaterial("matPkg", this.scene);
 		this.matPackage.diffuseColor = new Color3(0.6, 0.4, 0.2);
 		
@@ -106,7 +106,7 @@ export class GameScene {
 		this.matRotor.diffuseColor = new Color3(0.1, 0.1, 0.1);
 	}
 	
-	getMaterialsObject () {
+	getMaterialsObject() {
 		return {
 			matPackage: this.matPackage,
 			matTape: this.matTape,
@@ -117,7 +117,7 @@ export class GameScene {
 		};
 	}
 	
-	setupDroneSwipe () {
+	setupDroneSwipe() {
 		let startX = 0;
 		let isSwipeTarget = false;
 		
@@ -166,8 +166,8 @@ export class GameScene {
 		});
 	}
 	
-	addDragBehavior (mesh) {
-		const dragBehavior = new PointerDragBehavior({ dragPlaneNormal: new Vector3(0, 0, 1) });
+	addDragBehavior(mesh) {
+		const dragBehavior = new PointerDragBehavior({dragPlaneNormal: new Vector3(0, 0, 1)});
 		
 		dragBehavior.onDragStartObservable.add((event) => {
 			mesh.metadata.isDragging = true;
@@ -212,7 +212,7 @@ export class GameScene {
 		mesh.addBehavior(dragBehavior);
 	}
 	
-	returnToSource (mesh) {
+	returnToSource(mesh) {
 		mesh.setParent(null);
 		if (mesh.metadata) mesh.metadata.onDrone = false;
 		
@@ -227,13 +227,13 @@ export class GameScene {
 		}
 	}
 	
-	animateDelivery () {
+	animateDelivery() {
 		this.droneView.animateDelivery(() => {
 			this.resetDrone();
 		});
 	}
 	
-	resetDrone () {
+	resetDrone() {
 		if (GameState.currentPackage && GameState.currentPackage.mesh) {
 			GameState.currentPackage.mesh.dispose();
 			GameState.currentPackage = null;
@@ -250,7 +250,7 @@ export class GameScene {
 		this.droneView.animateReturn();
 	}
 	
-	changeDrone (dir) {
+	changeDrone(dir) {
 		GameState.activeDroneIndex += dir;
 		if (GameState.activeDroneIndex < 0) GameState.activeDroneIndex = GameState.drones.length - 1;
 		if (GameState.activeDroneIndex >= GameState.drones.length) GameState.activeDroneIndex = 0;

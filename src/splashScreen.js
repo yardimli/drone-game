@@ -8,8 +8,9 @@ import {
 	MeshBuilder
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
-import { AdvancedDynamicTexture, TextBlock, Control } from "@babylonjs/gui";
-import { GameState } from './gameState';
+import {AdvancedDynamicTexture, TextBlock, Control} from "@babylonjs/gui";
+import {GameState} from './gameState';
+
 export class SplashScreen {
 	constructor(engine) {
 		this.engine = engine;

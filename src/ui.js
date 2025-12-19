@@ -1,15 +1,16 @@
-import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control, Grid, Rectangle } from "@babylonjs/gui";
-import { Animation } from "@babylonjs/core";
-import { GameState } from './gameState';
+import {AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control, Grid, Rectangle} from "@babylonjs/gui";
+import {Animation} from "@babylonjs/core";
+import {GameState} from './gameState';
+
 export class UIManager {
-	constructor (scene, onDeliver) {
+	constructor(scene, onDeliver) {
 		this.adt = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
 		this.onDeliver = onDeliver;
 		this.createHUD();
 		this.createControlDeck();
 	};
 	
-	createHUD () {
+	createHUD() {
 		// Zone 1: The HUD (Top 5%)
 		const topPanel = new Grid();
 		topPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
@@ -37,7 +38,7 @@ export class UIManager {
 		topPanel.addControl(this.fleetText, 0, 1);
 	};
 	
-	createControlDeck () {
+	createControlDeck() {
 		const bottomContainer = new StackPanel();
 		bottomContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 		bottomContainer.height = "15%";
@@ -93,8 +94,8 @@ export class UIManager {
 		upgradeBtn.fontSize = "14px";
 		buttonGrid.addControl(upgradeBtn, 0, 2);
 	};
-
-	fadeIn () {
+	
+	fadeIn() {
 		const fadeRect = new Rectangle("fadeRect");
 		fadeRect.background = "black";
 		fadeRect.thickness = 0;
@@ -105,8 +106,8 @@ export class UIManager {
 		const frameRate = 60;
 		const animFade = new Animation("fadeIn", "alpha", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keys = [
-			{ frame: 0, value: 1 },
-			{ frame: 60, value: 0 } // Fade to transparent over 1 second
+			{frame: 0, value: 1},
+			{frame: 60, value: 0} // Fade to transparent over 1 second
 		];
 		animFade.setKeys(keys);
 		
@@ -118,7 +119,7 @@ export class UIManager {
 		}
 	}
 	
-	update () {
+	update() {
 		this.moneyText.text = `$${Math.floor(GameState.money)}`;
 		this.fleetText.text = GameState.drones[GameState.activeDroneIndex].name.toUpperCase();
 		

@@ -1,8 +1,8 @@
-import { MeshBuilder, Vector3, Color3, Animation, AnimationGroup, CubicEase, EasingFunction } from "@babylonjs/core";
-import { GameState } from './gameState';
+import {MeshBuilder, Vector3, Color3, Animation, AnimationGroup, CubicEase, EasingFunction} from "@babylonjs/core";
+import {GameState} from './gameState';
 
 export class DroneView {
-	constructor (scene, materials, assets) {
+	constructor(scene, materials, assets) {
 		this.scene = scene;
 		this.materials = materials;
 		this.assets = assets;
@@ -10,7 +10,7 @@ export class DroneView {
 		this.createMesh();
 	}
 	
-	createMesh (startPosition = null) {
+	createMesh(startPosition = null) {
 		const droneData = GameState.drones[GameState.activeDroneIndex];
 		
 		let mesh;
@@ -20,7 +20,7 @@ export class DroneView {
 			const entries = container.instantiateModelsToScene();
 			const root = entries.rootNodes[0];
 			
-			mesh = MeshBuilder.CreateBox("droneWrapper", { size: 0.1 }, this.scene);
+			mesh = MeshBuilder.CreateBox("droneWrapper", {size: 0.1}, this.scene);
 			mesh.visibility = 0;
 			
 			root.parent = mesh;
@@ -31,19 +31,19 @@ export class DroneView {
 				m.isPickable = true;
 			});
 		} else {
-			mesh = MeshBuilder.CreateBox("droneFallback", { size: 1 }, this.scene);
+			mesh = MeshBuilder.CreateBox("droneFallback", {size: 1}, this.scene);
 		}
 		
 		// Default Position
 		mesh.position = startPosition || new Vector3(0, -1, 0);
 		
-		const batSlot = MeshBuilder.CreateBox("batSlot", { size: 0.5 }, this.scene);
+		const batSlot = MeshBuilder.CreateBox("batSlot", {size: 0.5}, this.scene);
 		batSlot.parent = mesh;
 		batSlot.position.y = 0.3;
 		batSlot.position.z = -0.4;
 		batSlot.visibility = 0;
 		
-		const pkgSlot = MeshBuilder.CreateBox("pkgSlot", { size: 0.8 }, this.scene);
+		const pkgSlot = MeshBuilder.CreateBox("pkgSlot", {size: 0.8}, this.scene);
 		pkgSlot.parent = mesh;
 		pkgSlot.position.y = -0.6;
 		pkgSlot.visibility = 0;
@@ -55,7 +55,7 @@ export class DroneView {
 		return mesh;
 	}
 	
-	switchDrone (direction) {
+	switchDrone(direction) {
 		const oldMesh = this.mesh;
 		const slideDist = 15;
 		const frameRate = 60;
@@ -63,8 +63,8 @@ export class DroneView {
 		if (oldMesh) {
 			const animOut = new Animation("slideOut", "position.x", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 			const keysOut = [
-				{ frame: 0, value: oldMesh.position.x },
-				{ frame: 30, value: -direction * slideDist }
+				{frame: 0, value: oldMesh.position.x},
+				{frame: 30, value: -direction * slideDist}
 			];
 			animOut.setKeys(keysOut);
 			oldMesh.animations = [animOut];
@@ -79,8 +79,8 @@ export class DroneView {
 		
 		const animIn = new Animation("slideIn", "position.x", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysIn = [
-			{ frame: 0, value: startX },
-			{ frame: 40, value: 0 }
+			{frame: 0, value: startX},
+			{frame: 40, value: 0}
 		];
 		
 		const ease = new CubicEase();
@@ -92,7 +92,7 @@ export class DroneView {
 		this.scene.beginAnimation(newMesh, 0, 40, false);
 	}
 	
-	updateVisuals () {
+	updateVisuals() {
 		if (!this.mesh) return;
 		
 		const status = GameState.checkFlightStatus();
@@ -107,42 +107,42 @@ export class DroneView {
 		}
 	}
 	
-	animateDelivery (onComplete) {
+	animateDelivery(onComplete) {
 		if (!this.mesh) return;
 		const frameRate = 60;
 		const animGroup = new AnimationGroup("delivery");
 		
 		const animY = new Animation("flyY", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysY = [
-			{ frame: 0, value: -1.0 },
-			{ frame: 20, value: -0.8 },
-			{ frame: 40, value: -1.2 },
-			{ frame: 60, value: -1.0 },
-			{ frame: 80, value: -1.0 },
-			{ frame: 120, value: 0 },
-			{ frame: 180, value: 6 }
+			{frame: 0, value: -1.0},
+			{frame: 20, value: -0.8},
+			{frame: 40, value: -1.2},
+			{frame: 60, value: -1.0},
+			{frame: 80, value: -1.0},
+			{frame: 120, value: 0},
+			{frame: 180, value: 6}
 		];
 		animY.setKeys(keysY);
 		
 		const animX = new Animation("flyX", "position.x", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysX = [
-			{ frame: 0, value: 0 },
-			{ frame: 80, value: 0 },
-			{ frame: 120, value: 2 },
-			{ frame: 150, value: 8 },
-			{ frame: 180, value: 25 }
+			{frame: 0, value: 0},
+			{frame: 80, value: 0},
+			{frame: 120, value: 2},
+			{frame: 150, value: 8},
+			{frame: 180, value: 25}
 		];
 		animX.setKeys(keysX);
 		
 		const animRot = new Animation("flyRot", "rotation.z", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysRot = [
-			{ frame: 0, value: 0 },
-			{ frame: 20, value: 0.05 },
-			{ frame: 40, value: -0.05 },
-			{ frame: 60, value: 0 },
-			{ frame: 80, value: -0.1 },
-			{ frame: 100, value: -0.3 },
-			{ frame: 180, value: -0.4 }
+			{frame: 0, value: 0},
+			{frame: 20, value: 0.05},
+			{frame: 40, value: -0.05},
+			{frame: 60, value: 0},
+			{frame: 80, value: -0.1},
+			{frame: 100, value: -0.3},
+			{frame: 180, value: -0.4}
 		];
 		animRot.setKeys(keysRot);
 		
@@ -156,7 +156,7 @@ export class DroneView {
 		});
 	}
 	
-	animateReturn () {
+	animateReturn() {
 		if (!this.mesh) return;
 		this.mesh.position = new Vector3(-25, 5, 0);
 		this.mesh.rotation.z = -0.4;
@@ -166,30 +166,30 @@ export class DroneView {
 		
 		const animX = new Animation("returnX", "position.x", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysX = [
-			{ frame: 0, value: -25 },
-			{ frame: 50, value: 3 },
-			{ frame: 80, value: -0.5 },
-			{ frame: 100, value: 0.2 },
-			{ frame: 120, value: 0 }
+			{frame: 0, value: -25},
+			{frame: 50, value: 3},
+			{frame: 80, value: -0.5},
+			{frame: 100, value: 0.2},
+			{frame: 120, value: 0}
 		];
 		animX.setKeys(keysX);
 		
 		const animY = new Animation("returnY", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysY = [
-			{ frame: 0, value: 5 },
-			{ frame: 50, value: 1 },
-			{ frame: 80, value: 0 },
-			{ frame: 120, value: -1.0 }
+			{frame: 0, value: 5},
+			{frame: 50, value: 1},
+			{frame: 80, value: 0},
+			{frame: 120, value: -1.0}
 		];
 		animY.setKeys(keysY);
 		
 		const animRot = new Animation("returnRot", "rotation.z", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysRot = [
-			{ frame: 0, value: -0.4 },
-			{ frame: 40, value: -0.4 },
-			{ frame: 60, value: 0.2 },
-			{ frame: 90, value: -0.1 },
-			{ frame: 120, value: 0 }
+			{frame: 0, value: -0.4},
+			{frame: 40, value: -0.4},
+			{frame: 60, value: 0.2},
+			{frame: 90, value: -0.1},
+			{frame: 120, value: 0}
 		];
 		animRot.setKeys(keysRot);
 		

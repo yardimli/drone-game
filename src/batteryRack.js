@@ -1,8 +1,8 @@
-import { MeshBuilder, Vector3, StandardMaterial, Color3 } from "@babylonjs/core";
-import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
+import {MeshBuilder, Vector3, StandardMaterial, Color3} from "@babylonjs/core";
+import {AdvancedDynamicTexture, TextBlock} from "@babylonjs/gui";
 
 export class BatteryRack {
-	constructor (scene, materials, registerDragCallback) {
+	constructor(scene, materials, registerDragCallback) {
 		this.scene = scene;
 		this.materials = materials;
 		this.registerDragCallback = registerDragCallback;
@@ -24,20 +24,20 @@ export class BatteryRack {
 		this.spawnBattery(2, 3);
 	}
 	
-	createRackMesh () {
-		const rack = MeshBuilder.CreateBox("rack", { width: 8, height: 0.2, depth: 1 }, this.scene);
+	createRackMesh() {
+		const rack = MeshBuilder.CreateBox("rack", {width: 8, height: 0.2, depth: 1}, this.scene);
 		rack.position.y = this.rackHeight;
 	}
 	
-	spawnBattery (xPos, tier) {
-		const batRoot = MeshBuilder.CreateBox("batteryRoot", { width: 0.6, height: 0.8, depth: 0.4 }, this.scene);
-
+	spawnBattery(xPos, tier) {
+		const batRoot = MeshBuilder.CreateBox("batteryRoot", {width: 0.6, height: 0.8, depth: 0.4}, this.scene);
+		
 		batRoot.position = new Vector3(xPos, this.rackHeight + 0.5, 0);
 		batRoot.visibility = 0;
 		
 		const cellCount = 3;
 		for (let i = 0; i < cellCount; i++) {
-			const cell = MeshBuilder.CreateCylinder("cell" + i, { diameter: 0.15, height: 0.7 }, this.scene);
+			const cell = MeshBuilder.CreateCylinder("cell" + i, {diameter: 0.15, height: 0.7}, this.scene);
 			cell.parent = batRoot;
 			cell.position.x = (i - 1) * 0.18;
 			cell.rotation.z = Math.PI / 2;
@@ -45,13 +45,13 @@ export class BatteryRack {
 			cell.material = this.materials.matBatteryCell;
 		}
 		
-		const casing = MeshBuilder.CreateBox("casing", { width: 0.55, height: 0.75, depth: 0.35 }, this.scene);
+		const casing = MeshBuilder.CreateBox("casing", {width: 0.55, height: 0.75, depth: 0.35}, this.scene);
 		casing.parent = batRoot;
 		casing.material = this.materials.matBatteryCasing;
 		
 		const bars = [];
 		for (let i = 0; i < 4; i++) {
-			const bar = MeshBuilder.CreateBox("bar" + i, { width: 0.1, height: 0.05, depth: 0.02 }, this.scene);
+			const bar = MeshBuilder.CreateBox("bar" + i, {width: 0.1, height: 0.05, depth: 0.02}, this.scene);
 			bar.parent = casing;
 			bar.position.z = -0.18;
 			bar.position.y = -0.25 + (i * 0.15);
@@ -59,7 +59,7 @@ export class BatteryRack {
 			bars.push(bar);
 		}
 		
-		const plane = MeshBuilder.CreatePlane("labelPlane", { size: 1 }, this.scene);
+		const plane = MeshBuilder.CreatePlane("labelPlane", {size: 1}, this.scene);
 		plane.parent = batRoot;
 		plane.position.y = 0.5;
 		plane.position.z = -0.2;
@@ -97,7 +97,7 @@ export class BatteryRack {
 		}
 	}
 	
-	update () {
+	update() {
 		const deltaTime = this.scene.getEngine().getDeltaTime() / 1000;
 		
 		this.batteries.forEach(bat => {
