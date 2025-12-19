@@ -1,8 +1,8 @@
-import {MeshBuilder, Vector3, StandardMaterial, Color3} from "@babylonjs/core";
-import {AdvancedDynamicTexture, TextBlock} from "@babylonjs/gui";
+import { MeshBuilder, Vector3, StandardMaterial, Color3 } from "@babylonjs/core";
+import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
 
 export class BatteryRack {
-	constructor(scene, materials, registerDragCallback) {
+	constructor (scene, materials, registerDragCallback) {
 		this.scene = scene;
 		this.materials = materials;
 		this.registerDragCallback = registerDragCallback;
@@ -24,42 +24,66 @@ export class BatteryRack {
 		this.spawnBattery(2, 3);
 	}
 	
-	createRackMesh() {
-		const rack = MeshBuilder.CreateBox("rack", {width: 8, height: 0.2, depth: 1}, this.scene);
+	createRackMesh () {
+		const rack = MeshBuilder.CreateBox("rack", { width: 8, height: 0.2, depth: 1 }, this.scene);
 		rack.position.y = this.rackHeight;
 	}
 	
-	spawnBattery(xPos, tier) {
-		const batRoot = MeshBuilder.CreateBox("batteryRoot", {width: 0.6, height: 0.8, depth: 0.4}, this.scene);
+	spawnBattery (xPos, tier) {
+		// Calculate dimensions based on tier (rows)
+		// Tier 1 = 1 row, Tier 2 = 2 rows, etc.
+		const rowCount = tier;
+		const cellDiameter = 0.15;
+		const rowSpacing = 0.16;
+		
+		// Adjust depth to fit rows. Base depth 0.2 + space for rows
+		const batDepth = 0.2 + (rowCount * rowSpacing);
+		
+		// Update root box to match new dimensions so drag interactions work correctly
+		const batRoot = MeshBuilder.CreateBox("batteryRoot", { width: 0.6, height: 0.8, depth: batDepth }, this.scene);
 		
 		batRoot.position = new Vector3(xPos, this.rackHeight + 0.5, 0);
 		batRoot.visibility = 0;
 		
-		const cellCount = 3;
-		for (let i = 0; i < cellCount; i++) {
-			const cell = MeshBuilder.CreateCylinder("cell" + i, {diameter: 0.15, height: 0.7}, this.scene);
-			cell.parent = batRoot;
-			cell.position.x = (i - 1) * 0.18;
-			cell.rotation.z = Math.PI / 2;
-			cell.rotation.x = Math.PI / 2;
-			cell.material = this.materials.matBatteryCell;
+		const cellCount = 3; // Columns
+		
+		// Create cells in a grid (Rows x Cols)
+		for (let r = 0; r < rowCount; r++) {
+			for (let i = 0; i < cellCount; i++) {
+				const cell = MeshBuilder.CreateCylinder("cell_" + r + "_" + i, { diameter: cellDiameter, height: 0.7 }, this.scene);
+				cell.parent = batRoot;
+				
+				// Position X: centered columns
+				cell.position.x = (i - 1) * 0.18;
+				cell.position.z = (batDepth / 2) - 0.1; // Slightly inset from front face
+				
+				// Position Z: centered rows
+				// (r - (totalRows - 1) / 2) centers the group around 0
+				cell.position.y = (r - (rowCount - 1) / 2) * rowSpacing;
+				
+				cell.rotation.z = Math.PI / 2;
+				cell.rotation.x = Math.PI / 2;
+				cell.material = this.materials.matBatteryCell;
+			}
 		}
 		
-		const casing = MeshBuilder.CreateBox("casing", {width: 0.55, height: 0.75, depth: 0.35}, this.scene);
+		// Create casing with dynamic depth
+		const casing = MeshBuilder.CreateBox("casing", { width: 0.55, height: 0.75, depth: batDepth - 0.05 }, this.scene);
 		casing.parent = batRoot;
 		casing.material = this.materials.matBatteryCasing;
 		
 		const bars = [];
 		for (let i = 0; i < 4; i++) {
-			const bar = MeshBuilder.CreateBox("bar" + i, {width: 0.1, height: 0.05, depth: 0.02}, this.scene);
+			const bar = MeshBuilder.CreateBox("bar" + i, { width: 0.1, height: 0.05, depth: 0.02 }, this.scene);
 			bar.parent = casing;
-			bar.position.z = -0.18;
+			// Push bars to the front face of the casing
+			bar.position.z = -(batDepth / 2) + 0.02;
 			bar.position.y = -0.25 + (i * 0.15);
 			bar.material = this.matBarOff;
 			bars.push(bar);
 		}
 		
-		const plane = MeshBuilder.CreatePlane("labelPlane", {size: 1}, this.scene);
+		const plane = MeshBuilder.CreatePlane("labelPlane", { size: 1 }, this.scene);
 		plane.parent = batRoot;
 		plane.position.y = 0.5;
 		plane.position.z = -0.2;
@@ -97,7 +121,7 @@ export class BatteryRack {
 		}
 	}
 	
-	update() {
+	update () {
 		const deltaTime = this.scene.getEngine().getDeltaTime() / 1000;
 		
 		this.batteries.forEach(bat => {
