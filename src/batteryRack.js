@@ -1,5 +1,6 @@
 import { MeshBuilder, Vector3, StandardMaterial, Color3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
+import { GameState } from './gameState'; // Import GameState to access battery configs
 
 export class BatteryRack {
 	constructor (scene, materials, registerDragCallback) {
@@ -31,7 +32,6 @@ export class BatteryRack {
 	
 	spawnBattery (xPos, tier) {
 		// Calculate dimensions based on tier (rows)
-		// Tier 1 = 1 row, Tier 2 = 2 rows, etc.
 		const rowCount = tier;
 		const cellDiameter = 0.15;
 		const rowSpacing = 0.16;
@@ -58,7 +58,6 @@ export class BatteryRack {
 				cell.position.z = (batDepth / 2) - 0.1; // Slightly inset from front face
 				
 				// Position Z: centered rows
-				// (r - (totalRows - 1) / 2) centers the group around 0
 				cell.position.y = (r - (rowCount - 1) / 2) * rowSpacing;
 				
 				cell.rotation.z = Math.PI / 2;
@@ -97,8 +96,11 @@ export class BatteryRack {
 		textBlock.fontWeight = "bold";
 		advancedTexture.addControl(textBlock);
 		
+		// Get stats from GameState based on tier
+		const stats = GameState.batteryTypes[tier] || GameState.batteryTypes[1];
 		const weight = tier * 0.5;
-		const maxCharge = tier * 3.0;
+		const maxCharge = stats.maxCharge;
+		const voltage = stats.voltage;
 		
 		const initialPct = 0.5 + (Math.random() * 0.4);
 		const currentCharge = maxCharge * initialPct;
@@ -108,6 +110,7 @@ export class BatteryRack {
 			weight: weight,
 			charge: currentCharge,
 			maxCharge: maxCharge,
+			voltage: voltage, // Added voltage to metadata
 			isDragging: false,
 			onDrone: false,
 			uiText: textBlock,
@@ -143,7 +146,8 @@ export class BatteryRack {
 			const pctInt = Math.floor(pct * 100);
 			
 			if (meta.uiText) {
-				meta.uiText.text = `${pctInt}%`;
+				// Display Percentage and Voltage
+				meta.uiText.text = `${pctInt}%\n${meta.voltage}V`;
 				meta.uiText.color = pctInt < 30 ? "#e74c3c" : "#2ecc71";
 			}
 			

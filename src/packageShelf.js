@@ -1,8 +1,8 @@
-import {MeshBuilder, Vector3} from "@babylonjs/core";
-import {GameState} from './gameState';
+import { MeshBuilder, Vector3 } from "@babylonjs/core";
+import { AdvancedDynamicTexture, TextBlock, Rectangle, Control } from "@babylonjs/gui";
 
 export class PackageShelf {
-	constructor(scene, materials, registerDragCallback, assets) {
+	constructor (scene, materials, registerDragCallback, assets) {
 		this.scene = scene;
 		this.materials = materials;
 		this.registerDragCallback = registerDragCallback;
@@ -23,21 +23,21 @@ export class PackageShelf {
 		this.createShelfMesh();
 	}
 	
-	createShelfMesh() {
-		const shelf = MeshBuilder.CreateBox("shelf", {width: 5, height: 0.2, depth: 1.5}, this.scene);
+	createShelfMesh () {
+		const shelf = MeshBuilder.CreateBox("shelf", { width: 5, height: 0.2, depth: 1.5 }, this.scene);
 		shelf.position = this.shelfPosition;
 		shelf.material = this.materials.matBatteryCasing;
 		
 		const topShelf = shelf.clone("topShelf");
 		topShelf.position.y = this.shelfPosition.y + 1.5;
 		
-		const leftLeg = MeshBuilder.CreateBox("legL", {width: 0.2, height: 4, depth: 1.4}, this.scene);
+		const leftLeg = MeshBuilder.CreateBox("legL", { width: 0.2, height: 4, depth: 1.4 }, this.scene);
 		leftLeg.position = this.shelfPosition.add(new Vector3(-2.4, 0, 0));
 		
-		const rightLeg = MeshBuilder.CreateBox("legR", {width: 0.2, height: 4, depth: 1.4}, this.scene);
+		const rightLeg = MeshBuilder.CreateBox("legR", { width: 0.2, height: 4, depth: 1.4 }, this.scene);
 		rightLeg.position = this.shelfPosition.add(new Vector3(2.4, 0, 0));
 		
-		this.root = MeshBuilder.CreateBox("shelfRoot", {size: 0.1}, this.scene);
+		this.root = MeshBuilder.CreateBox("shelfRoot", { size: 0.1 }, this.scene);
 		this.root.visibility = 0;
 		
 		shelf.parent = this.root;
@@ -46,7 +46,7 @@ export class PackageShelf {
 		rightLeg.parent = this.root;
 	}
 	
-	addPackage(jobData) {
+	addPackage (jobData) {
 		const slotIndex = this.packages.length;
 		if (slotIndex >= this.slots.length) {
 			console.log("Shelf is full!");
@@ -62,7 +62,7 @@ export class PackageShelf {
 			const entries = container.instantiateModelsToScene();
 			const root = entries.rootNodes[0];
 			
-			pkg = MeshBuilder.CreateBox("pkgWrapper", {size: 0.5}, this.scene);
+			pkg = MeshBuilder.CreateBox("pkgWrapper", { size: 0.5 }, this.scene);
 			pkg.visibility = 0;
 			
 			root.parent = pkg;
@@ -73,7 +73,7 @@ export class PackageShelf {
 				m.isPickable = true;
 			});
 		} else {
-			pkg = MeshBuilder.CreateBox("package", {size: 0.6}, this.scene);
+			pkg = MeshBuilder.CreateBox("package", { size: 0.6 }, this.scene);
 			pkg.material = this.materials.matPackage;
 		}
 		
@@ -89,6 +89,9 @@ export class PackageShelf {
 			onDrone: false
 		};
 		
+		// Create Label for the package
+		this.createLabel(pkg, jobData);
+		
 		this.packages.push(pkg);
 		
 		if (this.registerDragCallback) {
@@ -98,7 +101,33 @@ export class PackageShelf {
 		return true;
 	}
 	
-	update() {
+	createLabel (parentMesh, data) {
+		const plane = MeshBuilder.CreatePlane("pkgLabel", { width: 1.5, height: 1 }, this.scene);
+		plane.parent = parentMesh;
+		plane.position.y = 0.8; // Above the package
+		plane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
+		
+		const adt = AdvancedDynamicTexture.CreateForMesh(plane);
+		
+		const bg = new Rectangle();
+		bg.background = "rgba(0,0,0,0.6)";
+		bg.thickness = 0;
+		bg.cornerRadius = 20;
+		adt.addControl(bg);
+		
+		const stack = new Control();
+		bg.addControl(stack);
+		
+		const infoText = new TextBlock();
+		infoText.text = `${data.weight}kg | ${data.distance}km\n$${data.reward}`;
+		infoText.color = "#f1c40f";
+		infoText.fontSize = 120;
+		infoText.fontWeight = "bold";
+		infoText.textWrapping = true;
+		adt.addControl(infoText);
+	}
+	
+	update () {
 		for (let i = this.packages.length - 1; i >= 0; i--) {
 			if (this.packages[i].isDisposed() || this.packages[i].parent !== null) {
 				this.packages.splice(i, 1);

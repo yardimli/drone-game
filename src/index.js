@@ -1,8 +1,8 @@
-import {Engine} from "@babylonjs/core";
-import {GameScene} from './gameScene';
-import {UIManager} from './ui';
-import {GameState} from './gameState';
-import {SplashScreen} from './splashScreen';
+import { Engine } from "@babylonjs/core";
+import { GameScene } from './gameScene';
+import { UIManager } from './ui';
+import { GameState } from './gameState';
+import { SplashScreen } from './splashScreen';
 
 const canvas = document.getElementById("renderCanvas");
 const engine = new Engine(canvas, true);
@@ -13,8 +13,11 @@ const initGame = async () => {
 	const handleDeliver = () => {
 		const status = GameState.checkFlightStatus();
 		if (status.valid) {
+			// Calculate energy cost using the new formula
+			const energyCost = GameState.calculateFlightCost();
+			
 			GameState.money += GameState.currentPackage.reward;
-			GameState.currentBattery.charge -= GameState.currentPackage.distance;
+			GameState.currentBattery.charge -= energyCost;
 			gameScene.animateDelivery();
 		}
 	};
