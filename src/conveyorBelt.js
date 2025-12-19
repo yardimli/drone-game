@@ -1,14 +1,27 @@
 import { MeshBuilder, Vector3, Color3 } from "@babylonjs/core";
+import { GameState } from './gameState'; // --- NEW: Import GameState for package config
 
 export class ConveyorBelt {
-	constructor (scene, materials, registerDragCallback) {
+	// --- MODIFIED: Accept assets in constructor ---
+	constructor (scene, materials, registerDragCallback, assets) {
 		this.scene = scene;
 		this.materials = materials;
-		this.registerDragCallback = registerDragCallback; // Callback to add drag behavior
+		this.registerDragCallback = registerDragCallback;
+		this.assets = assets; // Store assets
 		this.packages = [];
-		this.lastPackageSpawn = 0;
+		
+		this.state = "WAITING";
+		this.waitTimer = 0;
+		this.waitTime = 3000;
+		this.moveProgress = 0;
+		this.moveTarget = 2.5;
+		this.moveSpeed = 5.0;
 		
 		this.createBeltMesh();
+		
+		this.spawnPackage(0);
+		this.spawnPackage(2.5);
+		this.spawnPackage(5.0);
 	}
 	
 	createBeltMesh () {
@@ -16,31 +29,41 @@ export class ConveyorBelt {
 		belt.position.y = 4;
 	}
 	
-	spawnPackage () {
-		const width = 0.6 + Math.random() * 0.4;
-		const height = 0.6 + Math.random() * 0.4;
-		const depth = 0.6 + Math.random() * 0.4;
+	spawnPackage (offsetX = 0) {
+		// --- NEW: Pick random package type from GameState ---
+		const typeIndex = Math.floor(Math.random() * GameState.packageTypes.length);
+		const pkgData = GameState.packageTypes[typeIndex];
 		
-		const pkg = MeshBuilder.CreateBox("package", { width, height, depth }, this.scene);
-		pkg.position = new Vector3(8, 4.5, 0);
+		let pkg;
+		const container = this.assets[pkgData.id];
 		
-		const r = 0.5 + Math.random() * 0.2;
-		const g = 0.3 + Math.random() * 0.2;
-		const b = 0.1 + Math.random() * 0.1;
-		const mat = this.materials.matPackage.clone("pkgMat");
-		mat.diffuseColor = new Color3(r, g, b);
-		pkg.material = mat;
+		if (container) {
+			// Instantiate GLB
+			const entries = container.instantiateModelsToScene();
+			const root = entries.rootNodes[0];
+			
+			// Wrapper for consistent logic
+			pkg = MeshBuilder.CreateBox("pkgWrapper", { size: 0.5 }, this.scene);
+			pkg.visibility = 0;
+			
+			root.parent = pkg;
+			root.scaling = pkgData.scale;
+			root.rotation = pkgData.rotationOffset;
+			
+			// Ensure pickable
+			root.getChildMeshes().forEach(m => {
+				m.isPickable = true;
+			});
+		} else {
+			// Fallback
+			pkg = MeshBuilder.CreateBox("package", { size: 0.6 }, this.scene);
+		}
 		
-		const tapeX = MeshBuilder.CreateBox("tapeX", { width: width + 0.01, height: 0.1, depth: depth + 0.01 }, this.scene);
-		tapeX.parent = pkg;
-		tapeX.material = this.materials.matTape;
+		pkg.position = new Vector3(8 + offsetX, 4.5, 0);
 		
-		const tapeY = MeshBuilder.CreateBox("tapeY", { width: 0.1, height: height + 0.01, depth: depth + 0.01 }, this.scene);
-		tapeY.parent = pkg;
-		tapeY.material = this.materials.matTape;
-		
+		// Calculate stats based on config + random distance
 		const dist = parseFloat((Math.random() * 5 + 1).toFixed(1));
-		const weight = parseFloat((Math.random() * 3 + 0.5).toFixed(1));
+		const weight = pkgData.weight; // Use weight from config
 		const reward = Math.floor(dist * 10 + weight * 5);
 		
 		pkg.metadata = {
@@ -49,23 +72,60 @@ export class ConveyorBelt {
 			weight: weight,
 			reward: reward,
 			isDragging: false,
-			onDrone: false
+			onDrone: false,
+			targetX: pkg.position.x
 		};
 		
 		this.packages.push(pkg);
 		
-		// Register drag behavior in main scene
 		if (this.registerDragCallback) {
 			this.registerDragCallback(pkg);
 		}
 	}
 	
 	update () {
-		const now = Date.now();
-		if (now - this.lastPackageSpawn > 2000) {
-			if (Math.random() < 0.4) {
-				this.spawnPackage();
-				this.lastPackageSpawn = now;
+		const dt = this.scene.getEngine().getDeltaTime();
+		
+		if (this.state === "WAITING") {
+			this.waitTimer += dt;
+			if (this.waitTimer >= this.waitTime) {
+				this.state = "MOVING";
+				this.waitTimer = 0;
+				this.moveProgress = 0;
+				
+				this.spawnPackage(0);
+				
+				this.packages.forEach(p => {
+					if (!p || p.isDisposed()) return;
+					if (!p.metadata) return;
+					
+					if (!p.metadata.isDragging && !p.metadata.onDrone) {
+						p.metadata.targetX = p.position.x - this.moveTarget;
+					}
+				});
+			}
+		} else if (this.state === "MOVING") {
+			const step = (this.moveSpeed * dt) / 1000;
+			this.moveProgress += step;
+			
+			let allReached = true;
+			
+			this.packages.forEach(p => {
+				if (!p || p.isDisposed()) return;
+				if (!p.metadata) return;
+				
+				if (!p.metadata.isDragging && !p.metadata.onDrone) {
+					if (p.position.x > p.metadata.targetX) {
+						p.position.x -= step;
+						allReached = false;
+					} else {
+						p.position.x = p.metadata.targetX;
+					}
+				}
+			});
+			
+			if (allReached || this.moveProgress >= this.moveTarget) {
+				this.state = "WAITING";
 			}
 		}
 		
@@ -77,13 +137,11 @@ export class ConveyorBelt {
 				continue;
 			}
 			
-			if (!p.metadata.isDragging && !p.metadata.onDrone) {
-				p.position.x -= 0.02;
-				
-				if (p.position.x < -8) {
-					p.dispose();
-					this.packages.splice(i, 1);
-				}
+			if (p.metadata && (p.metadata.isDragging || p.metadata.onDrone)) continue;
+			
+			if (p.position.x < -8) {
+				p.dispose();
+				this.packages.splice(i, 1);
 			}
 		}
 	}

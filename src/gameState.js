@@ -1,10 +1,80 @@
+import { Vector3 } from "@babylonjs/core";
+
 export const GameState = {
 	money: 1250,
 	activeDroneIndex: 0,
+	
+	// --- MODIFIED: Drones array with GLB config and transforms ---
 	drones: [
-		{ name: "Sparrow", lift: 5.0, speed: 1.0, baseWeight: 1.0, color: "#3498db" },
-		{ name: "Hawk", lift: 8.0, speed: 1.2, baseWeight: 2.0, color: "#e74c3c" },
-		{ name: "Titan", lift: 15.0, speed: 0.7, baseWeight: 4.0, color: "#f1c40f" }
+		{
+			id: "drone1",
+			name: "Sparrow",
+			lift: 5.0,
+			speed: 1.0,
+			baseWeight: 1.0,
+			model: "drone1.glb",
+			scale: new Vector3(2, 2, 2), // Adjust scale per model
+			rotationOffset: new Vector3(0, Math.PI, 0) // Adjust rotation if model faces wrong way
+		},
+		{
+			id: "drone2",
+			name: "Hawk",
+			lift: 8.0,
+			speed: 1.2,
+			baseWeight: 2.0,
+			model: "drone2.glb",
+			scale: new Vector3(1.2, 1.2, 1.2),
+			rotationOffset: new Vector3(0, Math.PI, 0)
+		},
+		{
+			id: "drone3",
+			name: "Titan",
+			lift: 15.0,
+			speed: 0.7,
+			baseWeight: 4.0,
+			model: "drone3.glb",
+			scale: new Vector3(1.5, 1.5, 1.5),
+			rotationOffset: new Vector3(0, Math.PI, 0)
+		}
+	],
+	
+	// --- NEW: Package Types Array with weights and transforms ---
+	packageTypes: [
+		{
+			id: "pkg1",
+			weight: 0.5,
+			model: "package1.glb",
+			scale: new Vector3(0.5, 0.5, 0.5),
+			rotationOffset: new Vector3(0, 0, 0)
+		},
+		{
+			id: "pkg2",
+			weight: 1.0,
+			model: "package2.glb",
+			scale: new Vector3(0.6, 0.6, 0.6),
+			rotationOffset: new Vector3(0, 0, 0)
+		},
+		{
+			id: "pkg3",
+			weight: 2.0,
+			model: "package3.glb",
+			scale: new Vector3(0.7, 0.7, 0.7),
+			rotationOffset: new Vector3(0, 0, 0)
+		},
+		{
+			id: "pkg4",
+			weight: 3.5,
+			model: "package4.glb",
+			scale: new Vector3(0.8, 0.8, 0.8),
+			rotationOffset: new Vector3(0, 0, 0)
+		},
+		{
+			id: "pkg5",
+			weight: 5.0,
+			model: "package5.glb",
+			scale: new Vector3(0.9, 0.9, 0.9),
+			rotationOffset: new Vector3(0, 0, 0)
+		}
 	],
 	
 	// Current loadout state

@@ -6,12 +6,16 @@ import {
 	Color3,
 	PointerDragBehavior,
 	ArcRotateCamera,
-	PointerEventTypes
+	PointerEventTypes,
+	SceneLoader // --- NEW: Import SceneLoader
 } from "@babylonjs/core";
+// --- NEW: Import GLB loader side-effects ---
+import "@babylonjs/loaders/glTF";
 import { GameState } from './gameState';
 import { ConveyorBelt } from './conveyorBelt';
 import { BatteryRack } from './batteryRack';
 import { DroneView } from './droneView';
+
 export class GameScene {
 	constructor (engine, uiManager) {
 		this.engine = engine;
@@ -22,6 +26,9 @@ export class GameScene {
 		this.conveyor = null;
 		this.rack = null;
 		this.droneView = null;
+		
+		// --- NEW: Store loaded asset containers ---
+		this.assets = {};
 	}
 	
 	async init () {
@@ -31,12 +38,16 @@ export class GameScene {
 		
 		this.initMaterials();
 		
+		// --- NEW: Load all GLB assets before creating game objects ---
+		await this.loadAssets();
+		
 		// Initialize Sub-modules
-		// We pass a callback to register drag behavior so the sub-modules don't need to know about the drone logic directly
 		const dragCallback = (mesh) => this.addDragBehavior(mesh);
 		
-		this.droneView = new DroneView(this.scene, this.getMaterialsObject());
-		this.conveyor = new ConveyorBelt(this.scene, this.getMaterialsObject(), dragCallback);
+		// --- MODIFIED: Pass loaded assets to DroneView and ConveyorBelt ---
+		this.droneView = new DroneView(this.scene, this.getMaterialsObject(), this.assets);
+		this.conveyor = new ConveyorBelt(this.scene, this.getMaterialsObject(), dragCallback, this.assets);
+		
 		this.rack = new BatteryRack(this.scene, this.getMaterialsObject(), dragCallback);
 		
 		this.setupDroneSwipe();
@@ -46,6 +57,32 @@ export class GameScene {
 			this.rack.update();
 			this.droneView.updateVisuals();
 		});
+	}
+	
+	// --- NEW: Asset Loading Logic ---
+	async loadAssets() {
+		const loadPromises = [];
+		
+		// Load Drones
+		GameState.drones.forEach(drone => {
+			const p = SceneLoader.LoadAssetContainerAsync("./assets/", drone.model, this.scene)
+				.then(container => {
+					this.assets[drone.id] = container;
+				});
+			loadPromises.push(p);
+		});
+		
+		// Load Packages
+		GameState.packageTypes.forEach(pkg => {
+			const p = SceneLoader.LoadAssetContainerAsync("./assets/", pkg.model, this.scene)
+				.then(container => {
+					this.assets[pkg.id] = container;
+				});
+			loadPromises.push(p);
+		});
+		
+		await Promise.all(loadPromises);
+		console.log("All assets loaded");
 	}
 	
 	createCamera () {
@@ -71,8 +108,7 @@ export class GameScene {
 		this.matRotor = new StandardMaterial("matRotor", this.scene);
 		this.matRotor.diffuseColor = new Color3(0.1, 0.1, 0.1);
 	}
-
-// Helper to pass materials to sub-modules
+	
 	getMaterialsObject () {
 		return {
 			matPackage: this.matPackage,
@@ -83,7 +119,7 @@ export class GameScene {
 			matRotor: this.matRotor
 		};
 	}
-
+	
 	setupDroneSwipe () {
 		let startX = 0;
 		let isSwipeTarget = false;
@@ -92,13 +128,11 @@ export class GameScene {
 			switch (pointerInfo.type) {
 				case PointerEventTypes.POINTERDOWN:
 					if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh) {
-						// Check if the picked mesh is part of the drone hierarchy
 						const droneMesh = this.droneView ? this.droneView.mesh : null;
 						if (droneMesh) {
 							let mesh = pointerInfo.pickInfo.pickedMesh;
 							let isDrone = false;
 							
-							// Traverse parents to find if we clicked the drone or its parts
 							while (mesh) {
 								if (mesh === droneMesh) {
 									isDrone = true;
@@ -119,11 +153,9 @@ export class GameScene {
 					if (isSwipeTarget) {
 						const endX = this.scene.pointerX;
 						const diff = endX - startX;
-						const threshold = 20; // Sensitivity threshold
+						const threshold = 20;
 						
 						if (Math.abs(diff) > threshold) {
-							// Swipe Left (diff < 0) -> Next Drone
-							// Swipe Right (diff > 0) -> Previous Drone
 							if (diff > 0) {
 								this.changeDrone(-1);
 							} else {
@@ -143,12 +175,10 @@ export class GameScene {
 		dragBehavior.onDragStartObservable.add((event) => {
 			mesh.metadata.isDragging = true;
 			
-			// Detach from drone if attached
 			if (mesh.metadata.onDrone) {
 				mesh.setParent(null);
 				mesh.metadata.onDrone = false;
 				
-				// Clear GameState
 				if (mesh.metadata.type === 'package') GameState.currentPackage = null;
 				if (mesh.metadata.type === 'battery') GameState.currentBattery = null;
 			}
@@ -159,9 +189,7 @@ export class GameScene {
 			
 			const droneMesh = this.droneView ? this.droneView.mesh : null;
 			
-			// Check intersection with drone
-			if (droneMesh && !droneMesh.isDisposed() && mesh.intersectsMesh(droneMesh, false)) {
-				// Load logic
+			if (droneMesh && !droneMesh.isDisposed() && mesh.intersectsMesh(droneMesh, true)) { // Changed to true for recursive check
 				if (mesh.metadata.type === 'package' && !GameState.currentPackage) {
 					mesh.setParent(droneMesh);
 					mesh.position = new Vector3(0, -0.8, 0);
@@ -177,11 +205,9 @@ export class GameScene {
 					GameState.currentBattery = mesh.metadata;
 					GameState.currentBattery.mesh = mesh;
 				} else {
-					// Slot occupied
 					this.returnToSource(mesh);
 				}
 			} else {
-				// Missed drone
 				this.returnToSource(mesh);
 			}
 		});
@@ -239,6 +265,6 @@ export class GameScene {
 			GameState.currentBattery = null;
 		}
 		
-		this.droneView.createMesh();
+		this.droneView.switchDrone(dir);
 	}
 }

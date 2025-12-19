@@ -1,4 +1,4 @@
-import { MeshBuilder, Vector3 } from "@babylonjs/core";
+import { MeshBuilder, Vector3, StandardMaterial, Color3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
 
 export class BatteryRack {
@@ -7,6 +7,15 @@ export class BatteryRack {
 		this.materials = materials;
 		this.registerDragCallback = registerDragCallback;
 		this.batteries = [];
+		
+		// Create specific materials for the charge bars
+		this.matBarOn = new StandardMaterial("matBarOn", this.scene);
+		this.matBarOn.diffuseColor = new Color3(0.2, 1, 0.2);
+		this.matBarOn.emissiveColor = new Color3(0.2, 1, 0.2); // Glow effect
+		
+		this.matBarOff = new StandardMaterial("matBarOff", this.scene);
+		this.matBarOff.diffuseColor = new Color3(0.1, 0.1, 0.1);
+		this.matBarOff.emissiveColor = new Color3(0, 0, 0);
 		
 		this.createRackMesh();
 		
@@ -40,6 +49,18 @@ export class BatteryRack {
 		casing.parent = batRoot;
 		casing.material = this.materials.matBatteryCasing;
 		
+		// --- NEW: Charge Bars on Casing ---
+		const bars = [];
+		for (let i = 0; i < 4; i++) {
+			const bar = MeshBuilder.CreateBox("bar" + i, { width: 0.1, height: 0.05, depth: 0.02 }, this.scene);
+			bar.parent = casing;
+			// Position bars vertically on the front face
+			bar.position.z = -0.18; // Slightly protruding from casing front
+			bar.position.y = -0.25 + (i * 0.15); // Stacked vertically
+			bar.material = this.matBarOff;
+			bars.push(bar);
+		}
+		
 		// 3D UI Label
 		const plane = MeshBuilder.CreatePlane("labelPlane", { size: 1 }, this.scene);
 		plane.parent = batRoot;
@@ -69,7 +90,8 @@ export class BatteryRack {
 			maxCharge: maxCharge,
 			isDragging: false,
 			onDrone: false,
-			uiText: textBlock
+			uiText: textBlock,
+			bars: bars // Store reference to bars
 		};
 		
 		this.batteries.push(batRoot);
@@ -87,6 +109,7 @@ export class BatteryRack {
 			if (!bat || bat.isDisposed()) return;
 			
 			const meta = bat.metadata;
+			if (!meta) return; // Safety check
 			
 			// Auto-charge if not dragging and not on drone (sitting on rack)
 			if (!meta.isDragging && !meta.onDrone) {
@@ -100,11 +123,28 @@ export class BatteryRack {
 			}
 			
 			// Update Visuals
-			const pct = Math.floor((meta.charge / meta.maxCharge) * 100);
+			const pct = meta.charge / meta.maxCharge;
+			const pctInt = Math.floor(pct * 100);
+			
 			if (meta.uiText) {
-				meta.uiText.text = `${pct}%`;
+				meta.uiText.text = `${pctInt}%`;
 				// Green if high charge, Red if low
-				meta.uiText.color = pct < 30 ? "#e74c3c" : "#2ecc71";
+				meta.uiText.color = pctInt < 30 ? "#e74c3c" : "#2ecc71";
+			}
+			
+			// --- NEW: Update Bar Visuals ---
+			if (meta.bars) {
+				// Calculate how many bars should be lit (0 to 4)
+				const barsLit = Math.ceil(pct * 4);
+				
+				meta.bars.forEach((bar, index) => {
+					// Index 0 is bottom bar, Index 3 is top bar
+					if (index < barsLit) {
+						bar.material = this.matBarOn;
+					} else {
+						bar.material = this.matBarOff;
+					}
+				});
 			}
 		});
 	}
