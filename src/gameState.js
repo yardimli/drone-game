@@ -115,14 +115,14 @@ export const GameState = {
 			id: "pkg4",
 			weight: 3.5,
 			model: "package4.glb",
-			scale: new Vector3(1.5, 1.5, 1.5),
+			scale: new Vector3(1.1, 1.1, 1.1),
 			rotationOffset: new Vector3(0, 10, 0)
 		},
 		{
 			id: "pkg5",
 			weight: 5.0,
 			model: "package5.glb",
-			scale: new Vector3(1.5, 1.5, 1.5),
+			scale: new Vector3(1.1, 1.1, 1.1),
 			rotationOffset: new Vector3(0, 10, 0)
 		}
 	],

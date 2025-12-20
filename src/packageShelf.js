@@ -1,4 +1,4 @@
-import { MeshBuilder, Vector3 } from "@babylonjs/core";
+import { MeshBuilder, Vector3, ActionManager, ExecuteCodeAction } from "@babylonjs/core";
 import { AdvancedDynamicTexture, TextBlock, Rectangle, Control } from "@babylonjs/gui";
 
 export class PackageShelf {
@@ -106,6 +106,9 @@ export class PackageShelf {
 		plane.parent = parentMesh;
 		plane.position.y = 0.8; // Above the package
 		plane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
+		plane.renderingGroupId = 1; // Ensure it renders on top of other meshes
+		plane.isPickable = false; // Prevent label from blocking mouse events
+		plane.isVisible = false; // Start hidden
 		
 		const adt = AdvancedDynamicTexture.CreateForMesh(plane);
 		
@@ -125,6 +128,33 @@ export class PackageShelf {
 		infoText.fontWeight = "bold";
 		infoText.textWrapping = true;
 		adt.addControl(infoText);
+		
+		// Hover Logic
+		const actionManager = new ActionManager(this.scene);
+		
+		let hideTimer = null;
+		const show = () => {
+			if (hideTimer) {
+				clearTimeout(hideTimer);
+				hideTimer = null;
+			}
+			plane.isVisible = true;
+		};
+		
+		const hide = () => {
+			hideTimer = setTimeout(() => {
+				plane.isVisible = false;
+			}, 50); // Small delay to prevent flickering when moving between child meshes
+		};
+		
+		actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, show));
+		actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, hide));
+		
+		parentMesh.actionManager = actionManager;
+		// Attach same action manager to all children (the visible parts of the package)
+		parentMesh.getChildMeshes().forEach(m => {
+			m.actionManager = actionManager;
+		});
 	}
 	
 	update () {

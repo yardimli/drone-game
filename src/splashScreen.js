@@ -5,7 +5,7 @@ import {
 	FreeCamera,
 	HemisphericLight,
 	SceneLoader,
-	MeshBuilder
+	MeshBuilder, ArcRotateCamera
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import {AdvancedDynamicTexture, TextBlock, Control} from "@babylonjs/gui";
@@ -20,8 +20,12 @@ export class SplashScreen {
 	
 	async show() {
 		// Setup Scene
-		const camera = new FreeCamera("splashCam", new Vector3(0, 0, -25), this.scene);
-		camera.setTarget(Vector3.Zero());
+		const camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 18, new Vector3(0, 3, 0), this.scene);
+		
+		camera.inputs.clear();
+
+		// const camera = new FreeCamera("splashCam", new Vector3(0, 0, -25), this.scene);
+		// camera.setTarget(Vector3.Zero());
 		
 		const light = new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 		light.intensity = 1.0;
@@ -61,8 +65,8 @@ export class SplashScreen {
 		for (const item of assetsToLoad) {
 			try {
 				// Random Position (Portrait distribution)
-				const x = (Math.random() * 10) - 5;
-				const y = (Math.random() * 20) - 10;
+				const x = (Math.random() * 6) - 3;
+				const y = (Math.random() * 16) - 8;
 				
 				const result = await SceneLoader.ImportMeshAsync("", "./assets/", item.model, this.scene);
 				

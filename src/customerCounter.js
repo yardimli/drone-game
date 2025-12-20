@@ -49,6 +49,7 @@ export class CustomerCounter {
 		this.bubblePlane.position = new Vector3(0, 6.5, 0);
 		this.bubblePlane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
 		this.bubblePlane.visibility = 0;
+		this.bubblePlane.isPickable = false; // Disable picking when invisible
 		
 		this.adt = AdvancedDynamicTexture.CreateForMesh(this.bubblePlane);
 		
@@ -186,6 +187,7 @@ export class CustomerCounter {
 	
 	startTypewriter(fullText) {
 		this.bubblePlane.visibility = 1;
+		this.bubblePlane.isPickable = true; // Enable picking for buttons
 		this.textBlock.text = "";
 		this.btnPanel.isVisible = false;
 		
@@ -220,6 +222,7 @@ export class CustomerCounter {
 	leaveCustomer() {
 		this.state = "LEAVING";
 		this.bubblePlane.visibility = 0;
+		this.bubblePlane.isPickable = false; // Disable picking
 		if (this.typeInterval) clearInterval(this.typeInterval);
 		
 		const frameRate = 60;
