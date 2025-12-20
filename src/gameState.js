@@ -68,23 +68,23 @@ export const GameState = {
 		{
 			id: "drone2",
 			name: "Hawk",
-			lift: 8.0,
+			lift: 12.0,
 			speed: 1.2,
 			baseWeight: 2.0,
 			energyConsumption: 0.7,
 			model: "drone2.glb",
-			scale: new Vector3(1.2, 1.2, 1.2),
+			scale: new Vector3(3, 3, 3),
 			rotationOffset: new Vector3(0, Math.PI, 0)
 		},
 		{
 			id: "drone3",
 			name: "Titan",
-			lift: 15.0,
+			lift: 20.0,
 			speed: 0.7,
 			baseWeight: 4.0,
 			energyConsumption: 1.0,
 			model: "drone3.glb",
-			scale: new Vector3(1.5, 1.5, 1.5),
+			scale: new Vector3(4, 4, 4),
 			rotationOffset: new Vector3(0, Math.PI, 0)
 		}
 	],

@@ -1,5 +1,6 @@
-import { MeshBuilder, Vector3, Color3, Animation, AnimationGroup, CubicEase, EasingFunction } from "@babylonjs/core";
-import { GameState } from './gameState';
+import {MeshBuilder, Vector3, Color3, Animation, AnimationGroup, CubicEase, EasingFunction} from "@babylonjs/core";
+import {GameState} from './gameState';
+
 export class DroneView {
 	constructor(scene, materials, assets) {
 		this.scene = scene;

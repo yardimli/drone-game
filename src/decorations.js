@@ -23,7 +23,8 @@ export class Decorations {
 		// Clock Face
 		const face = MeshBuilder.CreateCylinder("clockFace", { diameter: 1.5, height: 0.1 }, this.scene);
 		face.position = clockPos;
-		face.rotation.x = Math.PI / 2; // Rotate to be vertical
+		// Rotate -90 degrees on X so the top face points towards -Z (Camera)
+		face.rotation.x = -Math.PI / 2;
 		
 		const matFace = new StandardMaterial("matClockFace", this.scene);
 		matFace.diffuseColor = new Color3(0.9, 0.9, 0.9);

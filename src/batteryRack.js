@@ -1,6 +1,7 @@
-import { MeshBuilder, Vector3, StandardMaterial, Color3 } from "@babylonjs/core";
-import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
-import { GameState } from './gameState';
+import {MeshBuilder, Vector3, StandardMaterial, Color3} from "@babylonjs/core";
+import {AdvancedDynamicTexture, TextBlock} from "@babylonjs/gui";
+import {GameState} from './gameState';
+
 export class BatteryRack {
 	constructor(scene, materials, registerDragCallback) {
 		this.scene = scene;

@@ -64,7 +64,7 @@ export class CustomerCounter {
 		
 		// The Tail (Rotated square at bottom left)
 		const tail = new Rectangle();
-		tail.width = "90px";
+		tail.width = "60px";
 		tail.height = "60px";
 		tail.background = "white";
 		tail.color = "black";
@@ -72,8 +72,8 @@ export class CustomerCounter {
 		tail.rotation = Math.PI / 4;
 		tail.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		tail.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-		tail.left = "-20px"; // Offset to align with main bubble
-		tail.top = "-30px"; // Offset to align with main bubble
+		tail.left = "60px"; // Moved inside to be visible
+		tail.top = "-20px"; // Moved up to intersect with body
 		container.addControl(tail);
 		
 		// Main Bubble Body
@@ -89,13 +89,13 @@ export class CustomerCounter {
 		// Patch to hide the border between tail and body
 		const patch = new Rectangle();
 		patch.width = "80px";
-		patch.height = "40px";
+		patch.height = "50px";
 		patch.background = "white";
 		patch.thickness = 0;
 		patch.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		patch.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-		patch.left = "90px";
-		patch.top = "-50px"; // Positioned over the intersection
+		patch.left = "70px"; // Aligned with tail
+		patch.top = "-55px"; // Positioned over the intersection
 		container.addControl(patch);
 		
 		const panel = new StackPanel();
