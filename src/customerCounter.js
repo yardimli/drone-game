@@ -8,8 +8,8 @@ import {
 	CubicEase,
 	EasingFunction
 } from "@babylonjs/core";
-import {AdvancedDynamicTexture, TextBlock, Rectangle, Button, StackPanel, Control} from "@babylonjs/gui";
-import {GameState} from './gameState';
+import { AdvancedDynamicTexture, TextBlock, Rectangle, Button, StackPanel, Control } from "@babylonjs/gui";
+import { GameState } from './gameState';
 
 export class CustomerCounter {
 	constructor(scene, shelfInstance) {
@@ -28,14 +28,16 @@ export class CustomerCounter {
 	}
 	
 	createCustomerMesh() {
-		this.customerMesh = MeshBuilder.CreatePlane("customer", {width: 2, height: 2}, this.scene);
+		this.customerMesh = MeshBuilder.CreatePlane("customer", { width: 2, height: 2 }, this.scene);
 		
-		this.hiddenPos = new Vector3(0, 6, 3); // Hidden below desk
-		this.visiblePos = new Vector3(0, 9.5, 3); // Visible above desk
+		// Modified positions: Left side of screen, slightly lower
+		this.hiddenPos = new Vector3(-2.5, 5, 3); // Hidden below desk
+		this.visiblePos = new Vector3(-2.5, 8.5, 3); // Visible above desk
 		
 		this.customerMesh.position = this.hiddenPos;
 		this.customerMesh.billboardMode = MeshBuilder.BILLBOARDMODE_Y;
 		this.customerMesh.visibility = 0;
+		this.customerMesh.renderingGroupId = 1; // Ensure customer renders in front of decorations
 		
 		this.customerMat = new StandardMaterial("matCustomer", this.scene);
 		this.customerMat.specularColor = Color3.Black();
@@ -44,21 +46,57 @@ export class CustomerCounter {
 	}
 	
 	createSpeechBubble() {
-		this.bubblePlane = MeshBuilder.CreatePlane("bubble", {width: 4, height: 2.5}, this.scene);
+		this.bubblePlane = MeshBuilder.CreatePlane("bubble", { width: 4, height: 3 }, this.scene);
 		
-		this.bubblePlane.position = new Vector3(0, 6.5, 0);
+		// Modified position: To the right of the customer and above
+		this.bubblePlane.position = new Vector3(1, 9.5, 3);
 		this.bubblePlane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
 		this.bubblePlane.visibility = 0;
-		this.bubblePlane.isPickable = false; // Disable picking when invisible
+		this.bubblePlane.isPickable = false;
+		this.bubblePlane.renderingGroupId = 1; // Ensure speech bubble renders in front of decorations
 		
 		this.adt = AdvancedDynamicTexture.CreateForMesh(this.bubblePlane);
 		
+		// Container to hold bubble parts
+		const container = new Rectangle();
+		container.thickness = 0;
+		this.adt.addControl(container);
+		
+		// The Tail (Rotated square at bottom left)
+		const tail = new Rectangle();
+		tail.width = "90px";
+		tail.height = "60px";
+		tail.background = "white";
+		tail.color = "black";
+		tail.thickness = 4;
+		tail.rotation = Math.PI / 4;
+		tail.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		tail.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+		tail.left = "-20px"; // Offset to align with main bubble
+		tail.top = "-30px"; // Offset to align with main bubble
+		container.addControl(tail);
+		
+		// Main Bubble Body
 		const bg = new Rectangle();
 		bg.background = "white";
 		bg.color = "black";
 		bg.thickness = 4;
-		bg.cornerRadius = 20;
-		this.adt.addControl(bg);
+		bg.cornerRadius = 60; // Increased radius
+		bg.height = "85%"; // Leave room for tail visual
+		bg.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		container.addControl(bg);
+		
+		// Patch to hide the border between tail and body
+		const patch = new Rectangle();
+		patch.width = "80px";
+		patch.height = "40px";
+		patch.background = "white";
+		patch.thickness = 0;
+		patch.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		patch.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+		patch.left = "90px";
+		patch.top = "-50px"; // Positioned over the intersection
+		container.addControl(patch);
 		
 		const panel = new StackPanel();
 		bg.addControl(panel);
@@ -70,8 +108,8 @@ export class CustomerCounter {
 		this.textBlock.textWrapping = true;
 		this.textBlock.resizeToFit = true;
 		this.textBlock.paddingTop = "20px";
-		this.textBlock.paddingLeft = "20px";
-		this.textBlock.paddingRight = "20px";
+		this.textBlock.paddingLeft = "30px";
+		this.textBlock.paddingRight = "30px";
 		this.textBlock.height = "250px";
 		this.textBlock.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 		this.textBlock.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -89,7 +127,7 @@ export class CustomerCounter {
 		btnAccept.height = "160px";
 		btnAccept.color = "white";
 		btnAccept.background = "#2ecc71";
-		btnAccept.cornerRadius = 10;
+		btnAccept.cornerRadius = 20;
 		btnAccept.fontSize = 60;
 		btnAccept.paddingRight = "10px";
 		btnAccept.onPointerUpObservable.add(() => this.acceptJob());
@@ -100,7 +138,7 @@ export class CustomerCounter {
 		btnDecline.height = "160px";
 		btnDecline.color = "white";
 		btnDecline.background = "#e74c3c";
-		btnDecline.cornerRadius = 10;
+		btnDecline.cornerRadius = 20;
 		btnDecline.fontSize = 60;
 		btnDecline.paddingLeft = "10px";
 		btnDecline.onPointerUpObservable.add(() => this.declineJob());
@@ -132,8 +170,8 @@ export class CustomerCounter {
 		const frameRate = 60;
 		const anim = new Animation("popIn", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keys = [
-			{frame: 0, value: this.hiddenPos.y},
-			{frame: 40, value: this.visiblePos.y}
+			{ frame: 0, value: this.hiddenPos.y },
+			{ frame: 40, value: this.visiblePos.y }
 		];
 		anim.setKeys(keys);
 		const ease = new CubicEase();
@@ -187,7 +225,7 @@ export class CustomerCounter {
 	
 	startTypewriter(fullText) {
 		this.bubblePlane.visibility = 1;
-		this.bubblePlane.isPickable = true; // Enable picking for buttons
+		this.bubblePlane.isPickable = true;
 		this.textBlock.text = "";
 		this.btnPanel.isVisible = false;
 		
@@ -222,14 +260,14 @@ export class CustomerCounter {
 	leaveCustomer() {
 		this.state = "LEAVING";
 		this.bubblePlane.visibility = 0;
-		this.bubblePlane.isPickable = false; // Disable picking
+		this.bubblePlane.isPickable = false;
 		if (this.typeInterval) clearInterval(this.typeInterval);
 		
 		const frameRate = 60;
 		const anim = new Animation("popOut", "position.y", frameRate, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keys = [
-			{frame: 0, value: this.visiblePos.y},
-			{frame: 30, value: this.hiddenPos.y}
+			{ frame: 0, value: this.visiblePos.y },
+			{ frame: 30, value: this.hiddenPos.y }
 		];
 		anim.setKeys(keys);
 		

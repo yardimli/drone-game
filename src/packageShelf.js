@@ -22,7 +22,7 @@ export class PackageShelf {
 	}
 	
 	createShelfMesh() {
-		const shelf = MeshBuilder.CreateBox("shelf", {width: 5, height: 0.2, depth: 1.5}, this.scene);
+		const shelf = MeshBuilder.CreateBox("shelf", {width: 7, height: 0.2, depth: 1.5}, this.scene);
 		shelf.position = this.shelfPosition;
 		shelf.material = this.materials.matBatteryCasing;
 		shelf.isPickable = false;
@@ -31,11 +31,11 @@ export class PackageShelf {
 		topShelf.position.y = this.shelfPosition.y + 1.5;
 		
 		const leftLeg = MeshBuilder.CreateBox("legL", {width: 0.2, height: 4, depth: 1.4}, this.scene);
-		leftLeg.position = this.shelfPosition.add(new Vector3(-2.4, 0, 0));
+		leftLeg.position = this.shelfPosition.add(new Vector3(-3.5, 0, 0));
 		leftLeg.isPickable = false;
 		
 		const rightLeg = MeshBuilder.CreateBox("legR", {width: 0.2, height: 4, depth: 1.4}, this.scene);
-		rightLeg.position = this.shelfPosition.add(new Vector3(2.4, 0, 0));
+		rightLeg.position = this.shelfPosition.add(new Vector3(3.5, 0, 0));
 		rightLeg.isPickable = false;
 		
 		this.root = MeshBuilder.CreateBox("shelfRoot", {size: 0.1}, this.scene);

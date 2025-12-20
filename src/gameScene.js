@@ -14,11 +14,13 @@ import {
 	EasingFunction
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
-import {GameState} from './gameState';
-import {PackageShelf} from './packageShelf';
-import {CustomerCounter} from './customerCounter';
-import {BatteryRack} from './batteryRack';
-import {DroneView} from './droneView';
+import { GameState } from './gameState';
+import { PackageShelf } from './packageShelf';
+import { CustomerCounter } from './customerCounter';
+import { BatteryRack } from './batteryRack';
+import { DroneView } from './droneView';
+import { Decorations } from './decorations'; // New import
+
 export class GameScene {
 	constructor(engine, uiManager) {
 		this.engine = engine;
@@ -29,6 +31,7 @@ export class GameScene {
 		this.customer = null;
 		this.rack = null;
 		this.droneView = null;
+		this.decorations = null; // New property
 		
 		this.assets = {};
 	}
@@ -49,6 +52,9 @@ export class GameScene {
 		this.customer = new CustomerCounter(this.scene, this.shelf);
 		this.rack = new BatteryRack(this.scene, this.getMaterialsObject(), dragCallback);
 		
+		// Initialize Decorations (Clock and Art)
+		this.decorations = new Decorations(this.scene); // New initialization
+		
 		this.setupDroneSwipe();
 		
 		this.scene.registerBeforeRender(() => {
@@ -56,6 +62,8 @@ export class GameScene {
 			this.customer.update();
 			this.rack.update();
 			this.droneView.updateVisuals();
+			// Update clock and other decorations
+			if (this.decorations) this.decorations.update();
 		});
 	}
 	
@@ -206,7 +214,7 @@ export class GameScene {
 	}
 	
 	addDragBehavior(mesh) {
-		const dragBehavior = new PointerDragBehavior({dragPlaneNormal: new Vector3(0, 0, 1)});
+		const dragBehavior = new PointerDragBehavior({ dragPlaneNormal: new Vector3(0, 0, 1) });
 		let hasMoved = false;
 		
 		dragBehavior.onDragStartObservable.add((event) => {
@@ -297,8 +305,8 @@ export class GameScene {
 		const frameRate = 60;
 		const animPos = new Animation("returnPos", "position", frameRate, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keys = [
-			{frame: 0, value: currentPos},
-			{frame: 30, value: targetPos}
+			{ frame: 0, value: currentPos },
+			{ frame: 30, value: targetPos }
 		];
 		animPos.setKeys(keys);
 		
@@ -308,8 +316,8 @@ export class GameScene {
 		
 		const animRot = new Animation("returnRot", "rotation", frameRate, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT);
 		const keysRot = [
-			{frame: 0, value: mesh.rotation},
-			{frame: 30, value: Vector3.Zero()}
+			{ frame: 0, value: mesh.rotation },
+			{ frame: 30, value: Vector3.Zero() }
 		];
 		animRot.setKeys(keysRot);
 		animRot.setEasingFunction(ease);
