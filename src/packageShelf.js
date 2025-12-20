@@ -1,14 +1,12 @@
 import { MeshBuilder, Vector3, ActionManager, ExecuteCodeAction } from "@babylonjs/core";
 import { AdvancedDynamicTexture, TextBlock, Rectangle, Control } from "@babylonjs/gui";
-
 export class PackageShelf {
-	constructor (scene, materials, registerDragCallback, assets) {
+	constructor(scene, materials, registerDragCallback, assets) {
 		this.scene = scene;
 		this.materials = materials;
 		this.registerDragCallback = registerDragCallback;
 		this.assets = assets;
 		this.packages = [];
-		
 		this.shelfPosition = new Vector3(0, 4.5, 1);
 		
 		this.slots = [
@@ -23,22 +21,26 @@ export class PackageShelf {
 		this.createShelfMesh();
 	}
 	
-	createShelfMesh () {
-		const shelf = MeshBuilder.CreateBox("shelf", { width: 5, height: 0.2, depth: 1.5 }, this.scene);
+	createShelfMesh() {
+		const shelf = MeshBuilder.CreateBox("shelf", {width: 5, height: 0.2, depth: 1.5}, this.scene);
 		shelf.position = this.shelfPosition;
 		shelf.material = this.materials.matBatteryCasing;
+		shelf.isPickable = false;
 		
 		const topShelf = shelf.clone("topShelf");
 		topShelf.position.y = this.shelfPosition.y + 1.5;
 		
-		const leftLeg = MeshBuilder.CreateBox("legL", { width: 0.2, height: 4, depth: 1.4 }, this.scene);
+		const leftLeg = MeshBuilder.CreateBox("legL", {width: 0.2, height: 4, depth: 1.4}, this.scene);
 		leftLeg.position = this.shelfPosition.add(new Vector3(-2.4, 0, 0));
+		leftLeg.isPickable = false;
 		
-		const rightLeg = MeshBuilder.CreateBox("legR", { width: 0.2, height: 4, depth: 1.4 }, this.scene);
+		const rightLeg = MeshBuilder.CreateBox("legR", {width: 0.2, height: 4, depth: 1.4}, this.scene);
 		rightLeg.position = this.shelfPosition.add(new Vector3(2.4, 0, 0));
+		rightLeg.isPickable = false;
 		
-		this.root = MeshBuilder.CreateBox("shelfRoot", { size: 0.1 }, this.scene);
+		this.root = MeshBuilder.CreateBox("shelfRoot", {size: 0.1}, this.scene);
 		this.root.visibility = 0;
+		this.root.isPickable = false;
 		
 		shelf.parent = this.root;
 		topShelf.parent = this.root;
@@ -46,7 +48,7 @@ export class PackageShelf {
 		rightLeg.parent = this.root;
 	}
 	
-	addPackage (jobData) {
+	addPackage(jobData) {
 		const slotIndex = this.packages.length;
 		if (slotIndex >= this.slots.length) {
 			console.log("Shelf is full!");
@@ -62,19 +64,23 @@ export class PackageShelf {
 			const entries = container.instantiateModelsToScene();
 			const root = entries.rootNodes[0];
 			
-			pkg = MeshBuilder.CreateBox("pkgWrapper", { size: 0.5 }, this.scene);
+			// Create a wrapper that acts as the hitbox
+			pkg = MeshBuilder.CreateBox("pkgWrapper", {size: 1.0}, this.scene);
 			pkg.visibility = 0;
+			pkg.isPickable = true; // Wrapper is the hit target
 			
 			root.parent = pkg;
 			root.scaling = jobData.scale;
 			root.rotation = jobData.rotationOffset;
 			
+			// Disable picking for children so the wrapper is always the picked mesh
 			root.getChildMeshes().forEach(m => {
-				m.isPickable = true;
+				m.isPickable = false;
 			});
 		} else {
-			pkg = MeshBuilder.CreateBox("package", { size: 0.6 }, this.scene);
+			pkg = MeshBuilder.CreateBox("package", {size: 0.6}, this.scene);
 			pkg.material = this.materials.matPackage;
+			pkg.isPickable = true;
 		}
 		
 		pkg.position = targetPos;
@@ -101,8 +107,8 @@ export class PackageShelf {
 		return true;
 	}
 	
-	createLabel (parentMesh, data) {
-		const plane = MeshBuilder.CreatePlane("pkgLabel", { width: 1.5, height: 1 }, this.scene);
+	createLabel(parentMesh, data) {
+		const plane = MeshBuilder.CreatePlane("pkgLabel", {width: 1.5, height: 1}, this.scene);
 		plane.parent = parentMesh;
 		plane.position.y = 0.8; // Above the package
 		plane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
@@ -144,20 +150,17 @@ export class PackageShelf {
 		const hide = () => {
 			hideTimer = setTimeout(() => {
 				plane.isVisible = false;
-			}, 50); // Small delay to prevent flickering when moving between child meshes
+			}, 50);
 		};
 		
 		actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, show));
 		actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, hide));
 		
 		parentMesh.actionManager = actionManager;
-		// Attach same action manager to all children (the visible parts of the package)
-		parentMesh.getChildMeshes().forEach(m => {
-			m.actionManager = actionManager;
-		});
+		// We don't need to attach to children anymore since children are not pickable
 	}
 	
-	update () {
+	update() {
 		for (let i = this.packages.length - 1; i >= 0; i--) {
 			if (this.packages[i].isDisposed() || this.packages[i].parent !== null) {
 				this.packages.splice(i, 1);

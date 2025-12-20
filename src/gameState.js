@@ -94,35 +94,35 @@ export const GameState = {
 			id: "pkg1",
 			weight: 0.5,
 			model: "package1.glb",
-			scale: new Vector3(4, 4, 4),
+			scale: new Vector3(3, 3, 3),
 			rotationOffset: new Vector3(0, 10, 0)
 		},
 		{
 			id: "pkg2",
 			weight: 1.0,
 			model: "package2.glb",
-			scale: new Vector3(4, 4, 4),
+			scale: new Vector3(3, 3, 3),
 			rotationOffset: new Vector3(0, 10, 0)
 		},
 		{
 			id: "pkg3",
 			weight: 2.0,
 			model: "package3.glb",
-			scale: new Vector3(5, 5, 5),
+			scale: new Vector3(4, 4, 4),
 			rotationOffset: new Vector3(0, 10, 0)
 		},
 		{
 			id: "pkg4",
 			weight: 3.5,
 			model: "package4.glb",
-			scale: new Vector3(1.1, 1.1, 1.1),
+			scale: new Vector3(1, 1, 1),
 			rotationOffset: new Vector3(0, 10, 0)
 		},
 		{
 			id: "pkg5",
 			weight: 5.0,
 			model: "package5.glb",
-			scale: new Vector3(1.1, 1.1, 1.1),
+			scale: new Vector3(1, 1, 1),
 			rotationOffset: new Vector3(0, 10, 0)
 		}
 	],

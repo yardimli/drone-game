@@ -1,15 +1,13 @@
 import { MeshBuilder, Vector3, StandardMaterial, Color3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
-import { GameState } from './gameState'; // Import GameState to access battery configs
-
+import { GameState } from './gameState';
 export class BatteryRack {
-	constructor (scene, materials, registerDragCallback) {
+	constructor(scene, materials, registerDragCallback) {
 		this.scene = scene;
 		this.materials = materials;
 		this.registerDragCallback = registerDragCallback;
 		this.batteries = [];
 		this.rackHeight = 1.5;
-		
 		this.matBarOn = new StandardMaterial("matBarOn", this.scene);
 		this.matBarOn.diffuseColor = new Color3(0.2, 1, 0.2);
 		this.matBarOn.emissiveColor = new Color3(0.2, 1, 0.2);
@@ -25,12 +23,13 @@ export class BatteryRack {
 		this.spawnBattery(2, 3);
 	}
 	
-	createRackMesh () {
-		const rack = MeshBuilder.CreateBox("rack", { width: 8, height: 0.2, depth: 1 }, this.scene);
+	createRackMesh() {
+		const rack = MeshBuilder.CreateBox("rack", {width: 8, height: 0.2, depth: 1}, this.scene);
 		rack.position.y = this.rackHeight;
+		rack.isPickable = false; // Rack itself shouldn't interfere
 	}
 	
-	spawnBattery (xPos, tier) {
+	spawnBattery(xPos, tier) {
 		// Calculate dimensions based on tier (rows)
 		const rowCount = tier;
 		const cellDiameter = 0.15;
@@ -40,17 +39,21 @@ export class BatteryRack {
 		const batDepth = 0.2 + (rowCount * rowSpacing);
 		
 		// Update root box to match new dimensions so drag interactions work correctly
-		const batRoot = MeshBuilder.CreateBox("batteryRoot", { width: 0.6, height: 0.8, depth: batDepth }, this.scene);
+		const batRoot = MeshBuilder.CreateBox("batteryRoot", {width: 0.6, height: 0.8, depth: batDepth}, this.scene);
 		
 		batRoot.position = new Vector3(xPos, this.rackHeight + 0.5, 0);
 		batRoot.visibility = 0;
+		batRoot.isPickable = true; // Make the wrapper the hit target
 		
 		const cellCount = 3; // Columns
 		
 		// Create cells in a grid (Rows x Cols)
 		for (let r = 0; r < rowCount; r++) {
 			for (let i = 0; i < cellCount; i++) {
-				const cell = MeshBuilder.CreateCylinder("cell_" + r + "_" + i, { diameter: cellDiameter, height: 0.7 }, this.scene);
+				const cell = MeshBuilder.CreateCylinder("cell_" + r + "_" + i, {
+					diameter: cellDiameter,
+					height: 0.7
+				}, this.scene);
 				cell.parent = batRoot;
 				
 				// Position X: centered columns
@@ -63,30 +66,34 @@ export class BatteryRack {
 				cell.rotation.z = Math.PI / 2;
 				cell.rotation.x = Math.PI / 2;
 				cell.material = this.materials.matBatteryCell;
+				cell.isPickable = false; // Disable picking for children
 			}
 		}
 		
 		// Create casing with dynamic depth
-		const casing = MeshBuilder.CreateBox("casing", { width: 0.55, height: 0.75, depth: batDepth - 0.05 }, this.scene);
+		const casing = MeshBuilder.CreateBox("casing", {width: 0.55, height: 0.75, depth: batDepth - 0.05}, this.scene);
 		casing.parent = batRoot;
 		casing.material = this.materials.matBatteryCasing;
+		casing.isPickable = false;
 		
 		const bars = [];
 		for (let i = 0; i < 4; i++) {
-			const bar = MeshBuilder.CreateBox("bar" + i, { width: 0.1, height: 0.05, depth: 0.02 }, this.scene);
+			const bar = MeshBuilder.CreateBox("bar" + i, {width: 0.1, height: 0.05, depth: 0.02}, this.scene);
 			bar.parent = casing;
 			// Push bars to the front face of the casing
 			bar.position.z = -(batDepth / 2) + 0.02;
 			bar.position.y = -0.25 + (i * 0.15);
 			bar.material = this.matBarOff;
+			bar.isPickable = false;
 			bars.push(bar);
 		}
 		
-		const plane = MeshBuilder.CreatePlane("labelPlane", { size: 1 }, this.scene);
+		const plane = MeshBuilder.CreatePlane("labelPlane", {size: 1}, this.scene);
 		plane.parent = batRoot;
 		plane.position.y = 0.5;
 		plane.position.z = -0.2;
 		plane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
+		plane.isPickable = false;
 		
 		const advancedTexture = AdvancedDynamicTexture.CreateForMesh(plane);
 		const textBlock = new TextBlock();
@@ -110,7 +117,7 @@ export class BatteryRack {
 			weight: weight,
 			charge: currentCharge,
 			maxCharge: maxCharge,
-			voltage: voltage, // Added voltage to metadata
+			voltage: voltage,
 			isDragging: false,
 			onDrone: false,
 			uiText: textBlock,
@@ -124,7 +131,7 @@ export class BatteryRack {
 		}
 	}
 	
-	update () {
+	update() {
 		const deltaTime = this.scene.getEngine().getDeltaTime() / 1000;
 		
 		this.batteries.forEach(bat => {

@@ -8,7 +8,10 @@ import {
 	ArcRotateCamera,
 	PointerEventTypes,
 	SceneLoader,
-	Camera
+	Camera,
+	Animation,
+	CubicEase,
+	EasingFunction
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import {GameState} from './gameState';
@@ -16,14 +19,12 @@ import {PackageShelf} from './packageShelf';
 import {CustomerCounter} from './customerCounter';
 import {BatteryRack} from './batteryRack';
 import {DroneView} from './droneView';
-
 export class GameScene {
 	constructor(engine, uiManager) {
 		this.engine = engine;
 		this.uiManager = uiManager;
 		this.scene = new Scene(engine);
 		this.scene.clearColor = new Color3(0.1, 0.1, 0.15);
-		
 		this.shelf = null;
 		this.customer = null;
 		this.rack = null;
@@ -99,7 +100,7 @@ export class GameScene {
 		this.matBatteryCasing.alpha = 0.5;
 		
 		this.matBatteryCell = new StandardMaterial("matBatCell", this.scene);
-		this.matBatteryCell.diffuseColor = new Color3(0.2, 0.9, 0.2);
+		this.matBatteryCasing.diffuseColor = new Color3(0.2, 0.9, 0.2);
 		
 		this.matDrone = new StandardMaterial("matDrone", this.scene);
 		this.matRotor = new StandardMaterial("matRotor", this.scene);
@@ -120,44 +121,82 @@ export class GameScene {
 	setupDroneSwipe() {
 		let startX = 0;
 		let isSwipeTarget = false;
+		let droneStartPosX = 0;
 		
 		this.scene.onPointerObservable.add((pointerInfo) => {
+			const droneMesh = this.droneView ? this.droneView.mesh : null;
+			
 			switch (pointerInfo.type) {
 				case PointerEventTypes.POINTERDOWN:
-					if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh) {
-						const droneMesh = this.droneView ? this.droneView.mesh : null;
-						if (droneMesh) {
-							let mesh = pointerInfo.pickInfo.pickedMesh;
-							let isDrone = false;
+					if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh && droneMesh) {
+						let mesh = pointerInfo.pickInfo.pickedMesh;
+						let isDrone = false;
+						
+						// Check if we clicked the drone or its children
+						let tempMesh = mesh;
+						while (tempMesh) {
+							if (tempMesh === droneMesh) {
+								isDrone = true;
+								break;
+							}
+							tempMesh = tempMesh.parent;
+						}
+						
+						if (isDrone) {
+							// Check if it is a package or battery attached to drone
+							// Since we made wrappers pickable and children unpickable,
+							// 'mesh' should be the wrapper itself if it's cargo.
+							let isCargo = false;
+							let checkMesh = mesh;
 							
-							while (mesh) {
-								if (mesh === droneMesh) {
-									isDrone = true;
+							while (checkMesh && checkMesh !== droneMesh) {
+								if (checkMesh.metadata && (checkMesh.metadata.type === 'package' || checkMesh.metadata.type === 'battery')) {
+									isCargo = true;
 									break;
 								}
-								mesh = mesh.parent;
+								checkMesh = checkMesh.parent;
 							}
 							
-							if (isDrone) {
+							if (!isCargo) {
 								isSwipeTarget = true;
 								startX = this.scene.pointerX;
+								droneStartPosX = droneMesh.position.x;
 							}
 						}
 					}
 					break;
 				
+				case PointerEventTypes.POINTERMOVE:
+					if (isSwipeTarget && droneMesh) {
+						const currentX = this.scene.pointerX;
+						const diff = currentX - startX;
+						const deadzone = 10;
+						
+						// Visual feedback with deadzone
+						if (Math.abs(diff) > deadzone) {
+							const sensitivity = 0.03;
+							// Apply offset based on diff minus deadzone direction
+							const offset = (diff > 0 ? diff - deadzone : diff + deadzone) * sensitivity;
+							droneMesh.position.x = droneStartPosX + offset;
+						}
+					}
+					break;
+				
 				case PointerEventTypes.POINTERUP:
-					if (isSwipeTarget) {
+					if (isSwipeTarget && droneMesh) {
 						const endX = this.scene.pointerX;
 						const diff = endX - startX;
-						const threshold = 20;
+						const threshold = 50; // Pixels
 						
 						if (Math.abs(diff) > threshold) {
-							if (diff > 0) {
-								this.changeDrone(-1);
-							} else {
+							if (diff < 0) {
 								this.changeDrone(1);
+							} else {
+								this.changeDrone(-1);
 							}
+						} else {
+							// Snap back if threshold not met
+							this.droneView.animateSnapBack();
 						}
 						isSwipeTarget = false;
 					}
@@ -168,8 +207,10 @@ export class GameScene {
 	
 	addDragBehavior(mesh) {
 		const dragBehavior = new PointerDragBehavior({dragPlaneNormal: new Vector3(0, 0, 1)});
+		let hasMoved = false;
 		
 		dragBehavior.onDragStartObservable.add((event) => {
+			hasMoved = false;
 			mesh.metadata.isDragging = true;
 			
 			if (mesh.metadata.onDrone) {
@@ -181,8 +222,18 @@ export class GameScene {
 			}
 		});
 		
+		dragBehavior.onDragObservable.add(() => {
+			hasMoved = true;
+		});
+		
 		dragBehavior.onDragEndObservable.add((event) => {
 			mesh.metadata.isDragging = false;
+			
+			if (!hasMoved) {
+				// Treat as click
+				this.animateReturnToSource(mesh);
+				return;
+			}
 			
 			const droneMesh = this.droneView ? this.droneView.mesh : null;
 			
@@ -202,60 +253,69 @@ export class GameScene {
 					GameState.currentBattery = mesh.metadata;
 					GameState.currentBattery.mesh = mesh;
 				} else {
-					this.returnToSource(mesh);
+					this.animateReturnToSource(mesh);
 				}
 			} else {
-				this.returnToSource(mesh);
+				this.animateReturnToSource(mesh);
 			}
 		});
 		
 		mesh.addBehavior(dragBehavior);
 	}
 	
-	returnToSource(mesh) {
+	animateReturnToSource(mesh) {
 		mesh.setParent(null);
 		if (mesh.metadata) mesh.metadata.onDrone = false;
 		
+		let targetPos;
+		const currentPos = mesh.position;
+		
 		if (mesh.metadata.type === 'battery') {
-			mesh.position.y = 2;
-			mesh.position.z = 0;
-			mesh.position.x = Math.max(-3.5, Math.min(3.5, mesh.position.x));
-			mesh.rotation = Vector3.Zero();
+			const x = Math.max(-3.5, Math.min(3.5, currentPos.x));
+			targetPos = new Vector3(x, 2, 0);
 		} else {
-			// Allow placing packages anywhere on the shelf
-			const pos = mesh.position;
-			
-			// Check if near the shelf area
-			// Shelf bounds approx: X: -2.5 to 2.5, Z: 0.25 to 1.75, Y: 4.5 to 6.5
+			// Package logic
 			const isNearShelf = (
-				Math.abs(pos.x) < 3.5 &&
-				pos.z > -0.5 && pos.z < 3.0 &&
-				pos.y > 3.0 && pos.y < 8.0
+				Math.abs(currentPos.x) < 3.5 &&
+				currentPos.z > -0.5 && currentPos.z < 3.0 &&
+				currentPos.y > 3.0 && currentPos.y < 8.0
 			);
 			
 			if (isNearShelf) {
-				// Clamp X to shelf width (avoiding legs)
-				const clampedX = Math.max(-2.3, Math.min(2.3, pos.x));
-				
-				// Clamp Z to shelf depth
-				const clampedZ = Math.max(0.4, Math.min(1.6, pos.z));
-				
-				// Snap Y to nearest tier
-				// Bottom Shelf Surface: 4.6 -> Center 4.85 (for 0.5 height box)
-				// Top Shelf Surface: 6.1 -> Center 6.35
-				const distBottom = Math.abs(pos.y - 4.85);
-				const distTop = Math.abs(pos.y - 6.35);
-				
+				const clampedX = Math.max(-2.3, Math.min(2.3, currentPos.x));
+				const clampedZ = Math.max(0.4, Math.min(1.6, currentPos.z));
+				const distBottom = Math.abs(currentPos.y - 4.85);
+				const distTop = Math.abs(currentPos.y - 6.35);
 				const snappedY = distBottom < distTop ? 4.85 : 6.35;
-				
-				mesh.position = new Vector3(clampedX, snappedY, clampedZ);
+				targetPos = new Vector3(clampedX, snappedY, clampedZ);
 			} else {
-				// Reset to default position (Center Bottom) if dropped far away
-				mesh.position = new Vector3(0, 4.85, 1);
+				targetPos = new Vector3(0, 4.85, 1);
 			}
-			
-			mesh.rotation = Vector3.Zero();
 		}
+		
+		// Animation
+		const frameRate = 60;
+		const animPos = new Animation("returnPos", "position", frameRate, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT);
+		const keys = [
+			{frame: 0, value: currentPos},
+			{frame: 30, value: targetPos}
+		];
+		animPos.setKeys(keys);
+		
+		const ease = new CubicEase();
+		ease.setEasingMode(EasingFunction.EASINGMODE_EASEOUT);
+		animPos.setEasingFunction(ease);
+		
+		const animRot = new Animation("returnRot", "rotation", frameRate, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT);
+		const keysRot = [
+			{frame: 0, value: mesh.rotation},
+			{frame: 30, value: Vector3.Zero()}
+		];
+		animRot.setKeys(keysRot);
+		animRot.setEasingFunction(ease);
+		
+		mesh.animations = [animPos, animRot];
+		this.scene.beginAnimation(mesh, 0, 30, false);
 	}
 	
 	animateDelivery() {
@@ -287,11 +347,11 @@ export class GameScene {
 		if (GameState.activeDroneIndex >= GameState.drones.length) GameState.activeDroneIndex = 0;
 		
 		if (GameState.currentPackage && GameState.currentPackage.mesh) {
-			this.returnToSource(GameState.currentPackage.mesh);
+			this.animateReturnToSource(GameState.currentPackage.mesh);
 			GameState.currentPackage = null;
 		}
 		if (GameState.currentBattery && GameState.currentBattery.mesh) {
-			this.returnToSource(GameState.currentBattery.mesh);
+			this.animateReturnToSource(GameState.currentBattery.mesh);
 			GameState.currentBattery = null;
 		}
 		
