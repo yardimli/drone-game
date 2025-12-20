@@ -20,9 +20,10 @@ import { CustomerCounter } from './customerCounter';
 import { BatteryRack } from './batteryRack';
 import { DroneView } from './droneView';
 import { Decorations } from './decorations';
+import { CashAnimation } from './cashAnimation';
 
 export class GameScene {
-	constructor(engine, uiManager) {
+	constructor (engine, uiManager) {
 		this.engine = engine;
 		this.uiManager = uiManager;
 		this.scene = new Scene(engine);
@@ -32,11 +33,12 @@ export class GameScene {
 		this.rack = null;
 		this.droneView = null;
 		this.decorations = null;
+		this.cashAnimation = null;
 		
 		this.assets = {};
 	}
 	
-	async init() {
+	async init () {
 		this.createCamera();
 		const light = new HemisphericLight("light", new Vector3(0, 1, 0), this.scene);
 		light.intensity = 0.8;
@@ -55,6 +57,9 @@ export class GameScene {
 		// Initialize Decorations (Clock and Art)
 		this.decorations = new Decorations(this.scene);
 		
+		// Initialize Cash Animation
+		this.cashAnimation = new CashAnimation(this.scene, this.uiManager);
+		
 		this.setupDroneSwipe();
 		
 		this.scene.registerBeforeRender(() => {
@@ -67,7 +72,7 @@ export class GameScene {
 		});
 	}
 	
-	async loadAssets() {
+	async loadAssets () {
 		const loadPromises = [];
 		
 		GameState.drones.forEach(drone => {
@@ -90,13 +95,13 @@ export class GameScene {
 		console.log("All assets loaded");
 	}
 	
-	createCamera() {
+	createCamera () {
 		const camera = new ArcRotateCamera("Camera", -Math.PI / 2, Math.PI / 2, 18, new Vector3(0, 3, 0), this.scene);
 		
 		camera.inputs.clear();
 	}
 	
-	initMaterials() {
+	initMaterials () {
 		this.matPackage = new StandardMaterial("matPkg", this.scene);
 		this.matPackage.diffuseColor = new Color3(0.6, 0.4, 0.2);
 		
@@ -115,7 +120,7 @@ export class GameScene {
 		this.matRotor.diffuseColor = new Color3(0.1, 0.1, 0.1);
 	}
 	
-	getMaterialsObject() {
+	getMaterialsObject () {
 		return {
 			matPackage: this.matPackage,
 			matTape: this.matTape,
@@ -126,7 +131,7 @@ export class GameScene {
 		};
 	}
 	
-	setupDroneSwipe() {
+	setupDroneSwipe () {
 		let startX = 0;
 		let isSwipeTarget = false;
 		let droneStartPosX = 0;
@@ -213,7 +218,7 @@ export class GameScene {
 		});
 	}
 	
-	addDragBehavior(mesh) {
+	addDragBehavior (mesh) {
 		const dragBehavior = new PointerDragBehavior({ dragPlaneNormal: new Vector3(0, 0, 1) });
 		let hasMoved = false;
 		
@@ -271,7 +276,7 @@ export class GameScene {
 		mesh.addBehavior(dragBehavior);
 	}
 	
-	animateReturnToSource(mesh) {
+	animateReturnToSource (mesh) {
 		mesh.setParent(null);
 		if (mesh.metadata) mesh.metadata.onDrone = false;
 		
@@ -326,28 +331,40 @@ export class GameScene {
 		this.scene.beginAnimation(mesh, 0, 30, false);
 	}
 	
-	animateDelivery() {
+	animateDelivery (reward, cost) {
+		// Fly Away
 		this.droneView.animateDelivery(() => {
-			this.resetDrone();
+			// Once gone, reset and fly back
+			this.resetDrone(reward, cost);
 		});
 	}
 	
-	resetDrone() {
+	resetDrone (reward, cost) {
 		if (GameState.currentPackage && GameState.currentPackage.mesh) {
 			GameState.currentPackage.mesh.dispose();
 			GameState.currentPackage = null;
 		}
 		
-		if (GameState.currentBattery && GameState.currentBattery.mesh) {
-			// Change: Removed the logic that forced charge to 0.
-			// The charge is now deducted in index.js based on distance/weight.
-			// The BatteryRack.update() loop will handle the visual updates (bars/text).
-		}
-		
-		this.droneView.animateReturn();
+		// Fly Back
+		this.droneView.animateReturn(() => {
+			// When back, update money and trigger confetti
+			if (reward !== undefined && cost !== undefined) {
+				const currentMoney = GameState.money;
+				
+				// Update Game State
+				GameState.money += reward;
+				GameState.currentBattery.charge -= cost;
+				
+				// Trigger Visuals
+				if (this.cashAnimation) {
+					const dronePos = this.droneView.mesh.position.clone();
+					this.cashAnimation.play(dronePos, currentMoney, reward);
+				}
+			}
+		});
 	}
 	
-	changeDrone(dir) {
+	changeDrone (dir) {
 		GameState.activeDroneIndex += dir;
 		if (GameState.activeDroneIndex < 0) GameState.activeDroneIndex = GameState.drones.length - 1;
 		if (GameState.activeDroneIndex >= GameState.drones.length) GameState.activeDroneIndex = 0;

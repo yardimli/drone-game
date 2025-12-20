@@ -3,14 +3,18 @@ import {Animation} from "@babylonjs/core";
 import {GameState} from './gameState';
 
 export class UIManager {
-	constructor(scene, onDeliver) {
+	constructor (scene, onDeliver) {
 		this.adt = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
 		this.onDeliver = onDeliver;
+		
+		// Flag to prevent update() from overwriting the money text during animation
+		this.isAnimatingMoney = false;
+		
 		this.createHUD();
 		this.createControlDeck();
 	};
 	
-	createHUD() {
+	createHUD () {
 		// Zone 1: The HUD (Top 5%)
 		const topPanel = new Grid();
 		topPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
@@ -21,7 +25,8 @@ export class UIManager {
 		this.adt.addControl(topPanel);
 		
 		this.moneyText = new TextBlock();
-		this.moneyText.text = `$${GameState.money}`;
+		// Initial set with decimal formatting
+		this.moneyText.text = `$${GameState.money.toFixed(2)}`;
 		this.moneyText.color = "#2ecc71";
 		this.moneyText.fontSize = "28px";
 		this.moneyText.fontWeight = "bold";
@@ -38,7 +43,7 @@ export class UIManager {
 		topPanel.addControl(this.fleetText, 0, 1);
 	};
 	
-	createControlDeck() {
+	createControlDeck () {
 		const bottomContainer = new StackPanel();
 		bottomContainer.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
 		bottomContainer.height = "15%";
@@ -95,7 +100,7 @@ export class UIManager {
 		buttonGrid.addControl(upgradeBtn, 0, 2);
 	};
 	
-	fadeIn() {
+	fadeIn () {
 		const fadeRect = new Rectangle("fadeRect");
 		fadeRect.background = "black";
 		fadeRect.thickness = 0;
@@ -119,8 +124,17 @@ export class UIManager {
 		}
 	}
 	
-	update() {
-		this.moneyText.text = `$${Math.floor(GameState.money)}`;
+	// Helper to set money text with formatting
+	setMoneyText (amount) {
+		this.moneyText.text = `$${amount.toFixed(2)}`;
+	}
+	
+	update () {
+		// Only update money from GameState if we aren't currently animating the counter
+		if (!this.isAnimatingMoney) {
+			this.setMoneyText(GameState.money);
+		}
+		
 		this.fleetText.text = GameState.drones[GameState.activeDroneIndex].name.toUpperCase();
 		
 		const status = GameState.checkFlightStatus();

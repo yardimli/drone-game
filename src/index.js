@@ -15,10 +15,13 @@ const initGame = async () => {
 		if (status.valid) {
 			// Calculate energy cost using the new formula
 			const energyCost = GameState.calculateFlightCost();
+			const reward = GameState.currentPackage.reward;
 			
-			GameState.money += GameState.currentPackage.reward;
-			GameState.currentBattery.charge -= energyCost;
-			gameScene.animateDelivery();
+			// Don't update GameState.money yet.
+			// Pass values to scene to update after animation completes.
+			
+			// Trigger visual animation sequence
+			gameScene.animateDelivery(reward, energyCost);
 		}
 	};
 	

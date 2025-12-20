@@ -178,7 +178,7 @@ export class DroneView {
 		});
 	}
 	
-	animateReturn() {
+	animateReturn(onComplete) {
 		if (!this.mesh) return;
 		this.mesh.position = new Vector3(-25, 5, 0);
 		this.mesh.rotation.z = -0.4;
@@ -218,6 +218,10 @@ export class DroneView {
 		animGroup.addTargetedAnimation(animX, this.mesh);
 		animGroup.addTargetedAnimation(animY, this.mesh);
 		animGroup.addTargetedAnimation(animRot, this.mesh);
+		
+		animGroup.onAnimationEndObservable.add(() => {
+			if (onComplete) onComplete();
+		});
 		
 		animGroup.play(false);
 	}
