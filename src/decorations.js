@@ -93,17 +93,17 @@ export class Decorations {
 	
 	createArt() {
 		// Frame Position: Above Shelf
-		const framePos = new Vector3(-2, 9.5, 2.0);
+		const framePos = new Vector3(-2, 8.5, 2.0);
 		
 		// Frame Mesh
-		const frame = MeshBuilder.CreateBox("artFrame", { width: 2.2, height: 1.7, depth: 0.1 }, this.scene);
+		const frame = MeshBuilder.CreateBox("artFrame", { width: 3.2, height: 2.2, depth: 0.1 }, this.scene);
 		frame.position = framePos;
 		const matFrame = new StandardMaterial("matFrame", this.scene);
 		matFrame.diffuseColor = new Color3(0.8, 0.6, 0.4); // Lighter frame color
 		frame.material = matFrame;
 		
 		// Canvas Mesh
-		const canvasMesh = MeshBuilder.CreatePlane("artCanvas", { width: 2, height: 1.5 }, this.scene);
+		const canvasMesh = MeshBuilder.CreatePlane("artCanvas", { width: 3, height: 2 }, this.scene);
 		canvasMesh.parent = frame;
 		canvasMesh.position.z = -0.06; // Slightly in front of the frame
 		// No rotation.y = Math.PI here, assuming default plane faces camera or light

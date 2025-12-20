@@ -130,7 +130,7 @@ export class PackageShelf {
 		const infoText = new TextBlock();
 		infoText.text = `${data.weight}kg | ${data.distance}km\n$${data.reward}`;
 		infoText.color = "#f1c40f";
-		infoText.fontSize = 120;
+		infoText.fontSize = 150;
 		infoText.fontWeight = "bold";
 		infoText.textWrapping = true;
 		adt.addControl(infoText);

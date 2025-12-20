@@ -19,7 +19,7 @@ import { PackageShelf } from './packageShelf';
 import { CustomerCounter } from './customerCounter';
 import { BatteryRack } from './batteryRack';
 import { DroneView } from './droneView';
-import { Decorations } from './decorations'; // New import
+import { Decorations } from './decorations';
 
 export class GameScene {
 	constructor(engine, uiManager) {
@@ -31,7 +31,7 @@ export class GameScene {
 		this.customer = null;
 		this.rack = null;
 		this.droneView = null;
-		this.decorations = null; // New property
+		this.decorations = null;
 		
 		this.assets = {};
 	}
@@ -53,7 +53,7 @@ export class GameScene {
 		this.rack = new BatteryRack(this.scene, this.getMaterialsObject(), dragCallback);
 		
 		// Initialize Decorations (Clock and Art)
-		this.decorations = new Decorations(this.scene); // New initialization
+		this.decorations = new Decorations(this.scene);
 		
 		this.setupDroneSwipe();
 		
@@ -339,11 +339,9 @@ export class GameScene {
 		}
 		
 		if (GameState.currentBattery && GameState.currentBattery.mesh) {
-			GameState.currentBattery.charge = 0;
-			if (GameState.currentBattery.uiText) {
-				GameState.currentBattery.uiText.text = "0%";
-				GameState.currentBattery.uiText.color = "#e74c3c";
-			}
+			// Change: Removed the logic that forced charge to 0.
+			// The charge is now deducted in index.js based on distance/weight.
+			// The BatteryRack.update() loop will handle the visual updates (bars/text).
 		}
 		
 		this.droneView.animateReturn();

@@ -1,6 +1,13 @@
-import {MeshBuilder, Vector3, StandardMaterial, Color3} from "@babylonjs/core";
-import {AdvancedDynamicTexture, TextBlock} from "@babylonjs/gui";
-import {GameState} from './gameState';
+import {
+	MeshBuilder,
+	Vector3,
+	StandardMaterial,
+	Color3,
+	ActionManager, // Added for hover detection
+	ExecuteCodeAction // Added for hover actions
+} from "@babylonjs/core";
+import { AdvancedDynamicTexture, TextBlock } from "@babylonjs/gui";
+import { GameState } from './gameState';
 
 export class BatteryRack {
 	constructor(scene, materials, registerDragCallback) {
@@ -25,7 +32,7 @@ export class BatteryRack {
 	}
 	
 	createRackMesh() {
-		const rack = MeshBuilder.CreateBox("rack", {width: 8, height: 0.2, depth: 1}, this.scene);
+		const rack = MeshBuilder.CreateBox("rack", { width: 8, height: 0.2, depth: 1 }, this.scene);
 		rack.position.y = this.rackHeight;
 		rack.isPickable = false; // Rack itself shouldn't interfere
 	}
@@ -40,7 +47,7 @@ export class BatteryRack {
 		const batDepth = 0.2 + (rowCount * rowSpacing);
 		
 		// Update root box to match new dimensions so drag interactions work correctly
-		const batRoot = MeshBuilder.CreateBox("batteryRoot", {width: 0.6, height: 0.8, depth: batDepth}, this.scene);
+		const batRoot = MeshBuilder.CreateBox("batteryRoot", { width: 0.6, height: 0.8, depth: batDepth }, this.scene);
 		
 		batRoot.position = new Vector3(xPos, this.rackHeight + 0.5, 0);
 		batRoot.visibility = 0;
@@ -72,14 +79,14 @@ export class BatteryRack {
 		}
 		
 		// Create casing with dynamic depth
-		const casing = MeshBuilder.CreateBox("casing", {width: 0.55, height: 0.75, depth: batDepth - 0.05}, this.scene);
+		const casing = MeshBuilder.CreateBox("casing", { width: 0.55, height: 0.75, depth: batDepth - 0.05 }, this.scene);
 		casing.parent = batRoot;
 		casing.material = this.materials.matBatteryCasing;
 		casing.isPickable = false;
 		
 		const bars = [];
 		for (let i = 0; i < 4; i++) {
-			const bar = MeshBuilder.CreateBox("bar" + i, {width: 0.1, height: 0.05, depth: 0.02}, this.scene);
+			const bar = MeshBuilder.CreateBox("bar" + i, { width: 0.1, height: 0.05, depth: 0.02 }, this.scene);
 			bar.parent = casing;
 			// Push bars to the front face of the casing
 			bar.position.z = -(batDepth / 2) + 0.02;
@@ -89,12 +96,13 @@ export class BatteryRack {
 			bars.push(bar);
 		}
 		
-		const plane = MeshBuilder.CreatePlane("labelPlane", {size: 1}, this.scene);
+		const plane = MeshBuilder.CreatePlane("labelPlane", { size: 1 }, this.scene);
 		plane.parent = batRoot;
 		plane.position.y = 0.5;
 		plane.position.z = -0.2;
 		plane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
 		plane.isPickable = false;
+		plane.isVisible = false; // Change: Start hidden, only show on hover
 		
 		const advancedTexture = AdvancedDynamicTexture.CreateForMesh(plane);
 		const textBlock = new TextBlock();
@@ -124,6 +132,23 @@ export class BatteryRack {
 			uiText: textBlock,
 			bars: bars
 		};
+		
+		// Change: Add ActionManager for Hover Logic
+		batRoot.actionManager = new ActionManager(this.scene);
+		
+		// Show label on pointer over
+		batRoot.actionManager.registerAction(
+			new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, () => {
+				plane.isVisible = true;
+			})
+		);
+		
+		// Hide label on pointer out
+		batRoot.actionManager.registerAction(
+			new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, () => {
+				plane.isVisible = false;
+			})
+		);
 		
 		this.batteries.push(batRoot);
 		
@@ -155,6 +180,7 @@ export class BatteryRack {
 			
 			if (meta.uiText) {
 				// Display Percentage and Voltage
+				// Note: Even if invisible, we update the text so it's correct when hovered
 				meta.uiText.text = `${pctInt}%\n${meta.voltage}V`;
 				meta.uiText.color = pctInt < 30 ? "#e74c3c" : "#2ecc71";
 			}
