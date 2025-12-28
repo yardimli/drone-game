@@ -10,12 +10,12 @@ export class PackageShelf {
 		this.shelfPosition = new Vector3(0, 4.5, 1);
 		
 		this.slots = [
-			new Vector3(-1.5, 0.5, 0),
-			new Vector3(0, 0.5, 0),
-			new Vector3(1.5, 0.5, 0),
-			new Vector3(-1.5, 1.8, 0),
-			new Vector3(0, 1.8, 0),
-			new Vector3(1.5, 1.8, 0)
+			new Vector3(-1.5, 0.2, 0),
+			new Vector3(0, 0.2, 0),
+			new Vector3(1.5, 0.2, 0),
+			new Vector3(-1.5, 1.4, 0),
+			new Vector3(0, 1.4, 0),
+			new Vector3(1.5, 1.4, 0)
 		];
 		
 		this.createShelfMesh();
