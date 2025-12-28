@@ -353,7 +353,9 @@ export class GameScene {
 				
 				// Update Game State
 				GameState.money += reward;
-				GameState.currentBattery.charge -= cost;
+				
+				// Update Battery: Clamp to 0 to prevent negative charge
+				GameState.currentBattery.charge = Math.max(0, GameState.currentBattery.charge - cost);
 				
 				// Trigger Visuals
 				if (this.cashAnimation) {

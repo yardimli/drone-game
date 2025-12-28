@@ -25,8 +25,8 @@ export class UIManager {
 		this.adt.addControl(topPanel);
 		
 		this.moneyText = new TextBlock();
-		// Initial set with decimal formatting
-		this.moneyText.text = `$${GameState.money.toFixed(2)}`;
+		// Initial set with currency formatting
+		this.moneyText.text = GameState.money.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 		this.moneyText.color = "#2ecc71";
 		this.moneyText.fontSize = "28px";
 		this.moneyText.fontWeight = "bold";
@@ -126,7 +126,7 @@ export class UIManager {
 	
 	// Helper to set money text with formatting
 	setMoneyText (amount) {
-		this.moneyText.text = `$${amount.toFixed(2)}`;
+		this.moneyText.text = amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 	}
 	
 	update () {

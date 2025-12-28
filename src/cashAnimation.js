@@ -77,12 +77,14 @@ export class CashAnimation {
 		ps.minLifeTime = 1.0;
 		ps.maxLifeTime = 2.0;
 		
-		// Emission rate (Reduced to ~1/3)
-		ps.emitRate = 30;
+		// Emission rate
+		// Reduced from 30 to 10 to make it less intense
+		ps.emitRate = 10;
 		
 		// Speed and Direction (Flying Up)
-		ps.minEmitPower = 2;
-		ps.maxEmitPower = 4;
+		// Reduced power slightly
+		ps.minEmitPower = 1.5;
+		ps.maxEmitPower = 3;
 		ps.updateSpeed = 0.02;
 		ps.direction1 = new Vector3(-1, 8, -1);
 		ps.direction2 = new Vector3(1, 8, 1);

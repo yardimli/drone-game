@@ -60,7 +60,8 @@ export const GameState = {
 			lift: 5.0,
 			speed: 1.0,
 			baseWeight: 1.0,
-			energyConsumption: 0.5, // Energy per km per kg
+			// Reduced consumption to balance round-trip logic
+			energyConsumption: 0.15,
 			model: "drone1.glb",
 			scale: new Vector3(2, 2, 2),
 			rotationOffset: new Vector3(0, Math.PI, 0)
@@ -71,7 +72,7 @@ export const GameState = {
 			lift: 12.0,
 			speed: 1.2,
 			baseWeight: 2.0,
-			energyConsumption: 0.7,
+			energyConsumption: 0.25,
 			model: "drone2.glb",
 			scale: new Vector3(3, 3, 3),
 			rotationOffset: new Vector3(0, Math.PI, 0)
@@ -82,7 +83,7 @@ export const GameState = {
 			lift: 20.0,
 			speed: 0.7,
 			baseWeight: 4.0,
-			energyConsumption: 1.0,
+			energyConsumption: 0.4,
 			model: "drone3.glb",
 			scale: new Vector3(4, 4, 4),
 			rotationOffset: new Vector3(0, Math.PI, 0)
@@ -135,15 +136,20 @@ export const GameState = {
 		if (!this.currentBattery || !this.currentPackage) return 0;
 		
 		const drone = this.drones[this.activeDroneIndex];
-		const totalWeight = drone.baseWeight + this.currentBattery.weight + this.currentPackage.weight;
 		const distance = this.currentPackage.distance;
 		
 		// Higher voltage batteries are more efficient (simulated)
-		// Base voltage reference is 12V. 24V is 2x efficient, etc.
 		const voltageEfficiency = this.currentBattery.voltage / 12.0;
 		
-		// Cost = (Distance * Total Weight * Drone Consumption Factor) / Voltage Efficiency
-		const cost = (distance * totalWeight * drone.energyConsumption) / voltageEfficiency;
+		// Leg 1: Outbound (Drone + Battery + Package)
+		const weightOut = drone.baseWeight + this.currentBattery.weight + this.currentPackage.weight;
+		
+		// Leg 2: Return (Drone + Battery) - Package is delivered
+		const weightIn = drone.baseWeight + this.currentBattery.weight;
+		
+		// Total Work = (WeightOut * Dist) + (WeightIn * Dist)
+		// Cost = Total Work * Consumption / Efficiency
+		const cost = (distance * (weightOut + weightIn) * drone.energyConsumption) / voltageEfficiency;
 		
 		return cost;
 	},

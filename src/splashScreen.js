@@ -101,7 +101,7 @@ export class SplashScreen {
 				const text = new TextBlock();
 				text.text = item.id;
 				text.color = "#f1c40f";
-				text.fontSize = 120;
+				text.fontSize = 80;
 				text.fontWeight = "bold";
 				text.outlineColor = "black";
 				text.outlineWidth = 8;
