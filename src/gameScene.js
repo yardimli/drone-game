@@ -232,6 +232,11 @@ export class GameScene {
 				
 				if (mesh.metadata.type === 'package') GameState.currentPackage = null;
 				if (mesh.metadata.type === 'battery') GameState.currentBattery = null;
+			} else if (mesh.metadata.type === 'package') {
+				// New: If dragging from shelf, clear the slot so it can be dropped elsewhere
+				// Save the slot index in case we need to revert
+				mesh.metadata.lastSlotIndex = mesh.metadata.slotIndex;
+				this.shelf.removePackageFromSlot(mesh);
 			}
 		});
 		
@@ -266,14 +271,50 @@ export class GameScene {
 					GameState.currentBattery = mesh.metadata;
 					GameState.currentBattery.mesh = mesh;
 				} else {
-					this.animateReturnToSource(mesh);
+					// Drone slot occupied
+					this.handleReturnLogic(mesh);
 				}
 			} else {
-				this.animateReturnToSource(mesh);
+				// Not dropped on drone
+				this.handleReturnLogic(mesh);
 			}
 		});
 		
 		mesh.addBehavior(dragBehavior);
+	}
+	
+	// New: Handle return logic including shelf slotting
+	handleReturnLogic(mesh) {
+		if (mesh.metadata.type === 'package') {
+			// Check if dropped near a valid shelf slot
+			const closestSlot = this.shelf.getClosestSlotIndex(mesh.position);
+			
+			// If valid slot found AND it is empty
+			if (closestSlot !== -1 && this.shelf.slotContent[closestSlot] === null) {
+				// Success - move to new slot
+				this.shelf.assignToSlot(mesh, closestSlot);
+				this.animateReturnToSource(mesh);
+			} else {
+				// Invalid drop (occupied or too far)
+				// Revert to old slot if it exists
+				if (mesh.metadata.lastSlotIndex !== undefined) {
+					// Check if old slot is still free (it should be as we cleared it)
+					if (this.shelf.slotContent[mesh.metadata.lastSlotIndex] === null) {
+						this.shelf.assignToSlot(mesh, mesh.metadata.lastSlotIndex);
+					} else {
+						// Fallback: Find any free slot
+						const freeSlot = this.shelf.getFreeSlot();
+						if (freeSlot !== -1) {
+							this.shelf.assignToSlot(mesh, freeSlot);
+						}
+					}
+				}
+				this.animateReturnToSource(mesh);
+			}
+		} else {
+			// Battery logic
+			this.animateReturnToSource(mesh);
+		}
 	}
 	
 	animateReturnToSource (mesh) {
@@ -288,21 +329,12 @@ export class GameScene {
 			targetPos = new Vector3(x, 2, 0);
 		} else {
 			// Package logic
-			const isNearShelf = (
-				Math.abs(currentPos.x) < 3.5 &&
-				currentPos.z > -0.5 && currentPos.z < 3.0 &&
-				currentPos.y > 3.0 && currentPos.y < 8.0
-			);
-			
-			if (isNearShelf) {
-				const clampedX = Math.max(-2.3, Math.min(2.3, currentPos.x));
-				const clampedZ = Math.max(0.4, Math.min(1.6, currentPos.z));
-				const distBottom = Math.abs(currentPos.y - 4.85);
-				const distTop = Math.abs(currentPos.y - 6.35);
-				const snappedY = distBottom < distTop ? 4.85 : 6.35;
-				targetPos = new Vector3(clampedX, snappedY, clampedZ);
+			// Use the stored initial position to return exactly to the slot
+			if (mesh.metadata.initialPosition) {
+				targetPos = mesh.metadata.initialPosition.clone();
 			} else {
-				targetPos = new Vector3(0, 4.85, 1);
+				// Fallback if no initial position is found
+				targetPos = new Vector3(0, 5.0, 1);
 			}
 		}
 		

@@ -23,6 +23,8 @@ export class CustomerCounter {
 		this.currentJob = null;
 		this.activeCustomerProfile = null;
 		
+		this.btnAccept = null; // Store reference to update state
+		
 		this.createCustomerMesh();
 		this.createSpeechBubble();
 	}
@@ -30,14 +32,13 @@ export class CustomerCounter {
 	createCustomerMesh() {
 		this.customerMesh = MeshBuilder.CreatePlane("customer", { width: 2, height: 2 }, this.scene);
 		
-		// Modified positions: Left side of screen, slightly lower
-		this.hiddenPos = new Vector3(-2.5, 5, 3); // Hidden below desk
-		this.visiblePos = new Vector3(-2.5, 8.5, 3); // Visible above desk
+		this.hiddenPos = new Vector3(-2.5, 5, 3);
+		this.visiblePos = new Vector3(-2.5, 8.5, 3);
 		
 		this.customerMesh.position = this.hiddenPos;
 		this.customerMesh.billboardMode = MeshBuilder.BILLBOARDMODE_Y;
 		this.customerMesh.visibility = 0;
-		this.customerMesh.renderingGroupId = 1; // Ensure customer renders in front of decorations
+		this.customerMesh.renderingGroupId = 1;
 		
 		this.customerMat = new StandardMaterial("matCustomer", this.scene);
 		this.customerMat.specularColor = Color3.Black();
@@ -48,21 +49,18 @@ export class CustomerCounter {
 	createSpeechBubble() {
 		this.bubblePlane = MeshBuilder.CreatePlane("bubble", { width: 4, height: 3 }, this.scene);
 		
-		// Modified position: To the right of the customer and above
 		this.bubblePlane.position = new Vector3(1, 9.5, 3);
 		this.bubblePlane.billboardMode = MeshBuilder.BILLBOARDMODE_ALL;
 		this.bubblePlane.visibility = 0;
 		this.bubblePlane.isPickable = false;
-		this.bubblePlane.renderingGroupId = 1; // Ensure speech bubble renders in front of decorations
+		this.bubblePlane.renderingGroupId = 1;
 		
 		this.adt = AdvancedDynamicTexture.CreateForMesh(this.bubblePlane);
 		
-		// Container to hold bubble parts
 		const container = new Rectangle();
 		container.thickness = 0;
 		this.adt.addControl(container);
 		
-		// The Tail (Rotated square at bottom left)
 		const tail = new Rectangle();
 		tail.width = "60px";
 		tail.height = "60px";
@@ -72,21 +70,19 @@ export class CustomerCounter {
 		tail.rotation = Math.PI / 4;
 		tail.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		tail.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-		tail.left = "60px"; // Moved inside to be visible
-		tail.top = "-20px"; // Moved up to intersect with body
+		tail.left = "60px";
+		tail.top = "-20px";
 		container.addControl(tail);
 		
-		// Main Bubble Body
 		const bg = new Rectangle();
 		bg.background = "white";
 		bg.color = "black";
 		bg.thickness = 4;
-		bg.cornerRadius = 60; // Increased radius
-		bg.height = "85%"; // Leave room for tail visual
+		bg.cornerRadius = 60;
+		bg.height = "85%";
 		bg.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 		container.addControl(bg);
 		
-		// Patch to hide the border between tail and body
 		const patch = new Rectangle();
 		patch.width = "80px";
 		patch.height = "50px";
@@ -94,8 +90,8 @@ export class CustomerCounter {
 		patch.thickness = 0;
 		patch.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		patch.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-		patch.left = "70px"; // Aligned with tail
-		patch.top = "-55px"; // Positioned over the intersection
+		patch.left = "70px";
+		patch.top = "-55px";
 		container.addControl(patch);
 		
 		const panel = new StackPanel();
@@ -132,6 +128,7 @@ export class CustomerCounter {
 		btnAccept.paddingRight = "10px";
 		btnAccept.onPointerUpObservable.add(() => this.acceptJob());
 		this.btnPanel.addControl(btnAccept);
+		this.btnAccept = btnAccept; // Store reference
 		
 		const btnDecline = Button.CreateSimpleButton("btnDec", "DECLINE");
 		btnDecline.width = "360px";
@@ -152,6 +149,18 @@ export class CustomerCounter {
 			this.timer += dt;
 			if (this.timer >= this.nextSpawnTime) {
 				this.spawnCustomer();
+			}
+		}
+		
+		// New: Update Accept Button state based on shelf capacity
+		if (this.btnPanel.isVisible && this.btnAccept) {
+			const isFull = this.shelf.isFull();
+			if (isFull) {
+				this.btnAccept.isEnabled = false;
+				this.btnAccept.background = "#95a5a6"; // Grey
+			} else {
+				this.btnAccept.isEnabled = true;
+				this.btnAccept.background = "#2ecc71"; // Green
 			}
 		}
 	}
